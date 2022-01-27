@@ -1,16 +1,17 @@
 #include <BoxTest.h>
 
-#define IMG_WIDTH 320
-#define IMG_HEIGHT 180
+#define IMG_WIDTH 480 // 16 * 30
+#define IMG_HEIGHT 270 // 9 * 30
 
 #define numOfBoxes IMG_WIDTH * IMG_HEIGHT
 
-unsigned int Boxy::VAO = 0;
+unsigned int Boxy::VAO;
 
 enum drawType{
     INSTANCED,
     NON_INSTANCED,
 };
+
 
 Camera2D* cam;
 
@@ -88,6 +89,11 @@ void instancedInit()
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
     glEnableVertexAttribArray(3);
+
+    glVertexAttribDivisor(0, 0);
+    glVertexAttribDivisor(1, 1);
+    glVertexAttribDivisor(2, 1);
+    glVertexAttribDivisor(3, 1);
 }
 
 void instancedUpdate()
@@ -96,11 +102,6 @@ void instancedUpdate()
     glm::mat4 ortho = cam->ortho;
 
     instancedShader->setMat4("ortho", ortho);
-
-    glVertexAttribDivisor(0, 0);
-    glVertexAttribDivisor(1, 1);
-    glVertexAttribDivisor(2, 1);
-    glVertexAttribDivisor(3, 1);
 
     for (int i = 0; i < numOfBoxes; i++){
         colours[i].w += ((float)rand() / RAND_MAX) * 0.10f;
@@ -114,9 +115,9 @@ void instancedUpdate()
 
     glBindVertexArray(instancedBox->VAO);
     glBindBuffer(pos_SBO, GL_ARRAY_BUFFER);
-    glBindBuffer(colour_SBO, GL_ARRAY_BUFFER);
     glBindBuffer(size_SBO, GL_ARRAY_BUFFER);
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, numOfBoxes);
+
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, numOfBoxes);
 }
 
 int main(void)

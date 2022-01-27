@@ -46,7 +46,6 @@ public:
 
     glm::mat4 getModel()
     {
-
         glm::mat4 model = glm::mat4(1);
 
         model = glm::translate(model, glm::vec3(pos.x, pos.y, 0));
@@ -54,21 +53,14 @@ public:
         return model;
     }
 
-
     static unsigned int getDefaultVAO()
     {
+        // Vertex positions
         float viis[] = {
-            // Vertex positions
-            -0.5f, +0.5f,
-            +0.5f, +0.5f,
-            +0.5f, -0.5f,
-            +0.5f, -0.5f,
-            -0.5f, -0.5f,
-            -0.5f, +0.5f,
-        };
-        unsigned int indices[] = {
-            0, 1, 2,
-            2, 3, 0,
+            -0.5f, +0.5f, // top left
+            +0.5f, +0.5f, // top right
+            -0.5f, -0.5f, // bottom left
+            +0.5f, -0.5f, // bottom right
         };
 
         unsigned int tVAO;
@@ -81,7 +73,7 @@ public:
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(viis), viis, GL_DYNAMIC_DRAW);
 
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
         glEnableVertexAttribArray(0);
 
         return tVAO;
