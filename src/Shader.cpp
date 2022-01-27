@@ -3,7 +3,8 @@
 std::vector<std::string> Shader::precompiledShaders;
 std::vector<unsigned int> Shader::precompiledShaderIDs;
 
-std::string Shader::readFile(const char* path) {
+std::string Shader::readFile(const char* path)
+{
 	if (!path) {
 		return std::string("");
 	}
@@ -25,7 +26,8 @@ std::string Shader::readFile(const char* path) {
 	}
 }
 
-unsigned int Shader::createShader(unsigned int shaderType, std::string code) {
+unsigned int Shader::createShader(unsigned int shaderType, std::string code)
+{
 	if (code.size() < 2) {
 		return NULL;
 	}
@@ -46,7 +48,8 @@ unsigned int Shader::createShader(unsigned int shaderType, std::string code) {
 	return vertex;
 }
 
-void Shader::createProgram() {
+void Shader::createProgram()
+{
 
 	this->ID = glCreateProgram();
 

@@ -1,12 +1,18 @@
 #include "WindowHandler.h"
 #include <Camera2D.h>
 
-WindowHandler::WindowHandler(Camera2D* cam) {
+WindowHandler::WindowHandler(Camera2D* cam)
+{
     this->cam = cam;
     this->massInit();
+
+    // starting cursor from the middle of the screen instead of the top left corner
+    this->mouseData[0] = windowSizes.x / 2.0f;
+    this->mouseData[1] = windowSizes.y / 2.0f;
 }
 
-void WindowHandler::handleMouseData() {
+void WindowHandler::handleMouseData()
+{
     this->mouseData[5] = 0;
     this->trackpadData[0] = 0;
     this->trackpadData[1] = 0;
@@ -27,14 +33,16 @@ void WindowHandler::handleMouseData() {
     }
 }
 
-void WindowHandler::handleKeyData() {
+void WindowHandler::handleKeyData()
+{
     for (int i : newPressIndices) {
         keyData[i] = 1;
     }
     newPressIndices.clear();
 }
 
-bool WindowHandler::looper() {
+bool WindowHandler::looper()
+{
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
 
@@ -48,7 +56,8 @@ bool WindowHandler::looper() {
     return done;
 }
 
-void WindowHandler::massInit() {
+void WindowHandler::massInit()
+{
     if (!glfwInit()) {
         printf("GLFW init error\n");
         std::exit(-1);
@@ -59,7 +68,7 @@ void WindowHandler::massInit() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    window = glfwCreateWindow(windowSizes.x, windowSizes.y, "2D physics playground", NULL, NULL);
+    window = glfwCreateWindow(windowSizes.x, windowSizes.y, "Instances", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -84,6 +93,9 @@ void WindowHandler::massInit() {
         std::exit(-1);
     }
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glViewport(0, 0, (int)(windowSizes.x * dpiScaling), (int)(windowSizes.y * dpiScaling));
 }
 
@@ -95,7 +107,8 @@ void WindowHandler::mouseEventCallback(GLFWwindow* window, double xpos, double y
     thisClass->mouseData[1] = (int)ypos;
 }
 
-void WindowHandler::buttonEventCallback(GLFWwindow* window, int button, int action, int mods) {
+void WindowHandler::buttonEventCallback(GLFWwindow* window, int button, int action, int mods)
+{
     WindowHandler* thisClass = (WindowHandler*)glfwGetWindowUserPointer(window);
     if (action){
         thisClass->mouseData[button + 2] = 2;
@@ -105,14 +118,16 @@ void WindowHandler::buttonEventCallback(GLFWwindow* window, int button, int acti
     }
 }
 
-void WindowHandler::scrollEventCallback(GLFWwindow* window, double xoffset, double yoffset) {
+void WindowHandler::scrollEventCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
     WindowHandler* thisClass = (WindowHandler*)glfwGetWindowUserPointer(window);
-    thisClass->mouseData[5] = (int)yoffset;
+    thisClass->mouseData[5] = yoffset;
     thisClass->trackpadData[0] = xoffset;
     thisClass->trackpadData[1] = yoffset;
 }
 
-void WindowHandler::glfwKeyEventCallback(GLFWwindow* window, int key, int scancode, int action, int mods){
+void WindowHandler::glfwKeyEventCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
     WindowHandler* thisClass = (WindowHandler*)glfwGetWindowUserPointer(window);
     if (action == 1) {
         thisClass->keyData[key] = 2;
@@ -123,14 +138,16 @@ void WindowHandler::glfwKeyEventCallback(GLFWwindow* window, int key, int scanco
     }
 }
 
-void WindowHandler::glfwWindowFocusCallback(GLFWwindow* window, int isFocused) {
+void WindowHandler::glfwWindowFocusCallback(GLFWwindow* window, int isFocused)
+{
     WindowHandler* thisClass = (WindowHandler*)glfwGetWindowUserPointer(window);
     if (!isFocused) {
         thisClass->handleMouseData();
     }
 }
 
-void WindowHandler::windowSizeEventCallback(GLFWwindow* window, int width, int height) {
+void WindowHandler::windowSizeEventCallback(GLFWwindow* window, int width, int height)
+{
     WindowHandler* thisClass = (WindowHandler*)glfwGetWindowUserPointer(window);
 
     glViewport(0, 0, (int)(width * thisClass->dpiScaling), (int)(height * thisClass->dpiScaling));

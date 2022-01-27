@@ -12,6 +12,7 @@
 
 class Shader
 {
+
 public:
 	static std::vector<std::string> precompiledShaders;
 	static std::vector<unsigned int> precompiledShaderIDs;

@@ -1,19 +1,22 @@
 #include <Camera2D.h>
 #include <WindowHandler.h>
 
-Camera2D::Camera2D(glm::vec2 pos, WindowHandler* wh) {
+Camera2D::Camera2D(glm::vec2 pos, WindowHandler* wh)
+{
 	this->pos = pos;
 	this->wh = wh;
 	this->window = wh->window;
 }
 
-void Camera2D::updateOrtho() {
+void Camera2D::updateOrtho()
+{
 	glm::vec2 xSides = defaultXSides / (zoom * zoom) + pos.x;
 	glm::vec2 ySides = defaultYSides / (zoom * zoom) + pos.y;
 	ortho = glm::ortho(xSides.x, xSides.y, ySides.x, ySides.y);
 }
 
-void Camera2D::changeZoom(float inc) {
+void Camera2D::changeZoom(float inc)
+{
 	glm::vec2 mp = getCameraCoords(zoomPoint);
 
 	float zoomAfter = limitZoom(zoom + inc);
@@ -36,7 +39,8 @@ void Camera2D::changeZoom(float inc) {
 	zoom = limitZoom(zoom);
 }
 
-float Camera2D::limitZoom(float inZoom) {
+float Camera2D::limitZoom(float inZoom)
+{
 	if (inZoom < zoomLimits.x) {
 		inZoom = zoomLimits.x;
 	}
@@ -46,7 +50,8 @@ float Camera2D::limitZoom(float inZoom) {
 	return inZoom;
 }
 
-void Camera2D::update() {
+void Camera2D::update()
+{
 	updateOrtho();
 
 	int width, height;
@@ -67,7 +72,8 @@ void Camera2D::update() {
 	}
 }
 
-void Camera2D::dragFunc(int width, int height) {
+void Camera2D::dragFunc(int width, int height)
+{
 	glm::vec2 diffVec = glm::vec2(dragTo->x - lastPos->x,
 		dragTo->y - lastPos->y);
 	glm::vec2 sideDiffs = glm::vec2(defaultXSides.y - defaultXSides.x,
@@ -100,7 +106,8 @@ void Camera2D::dragFunc(int width, int height) {
 	}
 }
 
-glm::vec2 Camera2D::getMouseCoords() {
+glm::vec2 Camera2D::getMouseCoords()
+{
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
 	float xPerct = wh->mouseData[0] / (float)width;
@@ -118,7 +125,8 @@ glm::vec2 Camera2D::getMouseCoords() {
 	return glm::vec2(xPos, yPos);
 }
 
-glm::vec2 Camera2D::getCameraCoords(glm::vec2 p) {
+glm::vec2 Camera2D::getCameraCoords(glm::vec2 p)
+{
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
 	float xPerct = p.x / width;

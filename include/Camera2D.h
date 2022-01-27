@@ -7,6 +7,7 @@
 
 class Camera2D
 {
+
 public:
 	glm::vec2 pos;
 	glm::vec2 defaultXSides = glm::vec2(-8.0f, +8.0f);
