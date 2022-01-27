@@ -7,9 +7,7 @@ class Boxy
 {
 
 public:
-    unsigned int VAO;
-	unsigned int TEX;
-	unsigned int id;
+    static unsigned int VAO;
 
 	Shader* shader;
 
@@ -20,8 +18,6 @@ public:
     
     Boxy(glm::vec2 pos, glm::vec2 size)
     {
-        this->VAO = this->getDefaultVAO();
-
         this->pos = glm::vec2(pos.x, pos.y);
         this->rotation = 0.0f;
         this->size = glm::vec2(size.x, size.y);
@@ -41,7 +37,7 @@ public:
 
         shader->setVec4("colour", colour.x, colour.y, colour.z, colour.w);
 
-        glBindVertexArray(this->VAO);
+        glBindVertexArray(Boxy::VAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
         colour.w = colour.w + ((float)rand() / RAND_MAX) * 0.10f;
@@ -59,7 +55,7 @@ public:
     }
 
 
-    unsigned int getDefaultVAO()
+    static unsigned int getDefaultVAO()
     {
         float viis[] = {
             // Vertex positions

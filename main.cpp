@@ -1,9 +1,11 @@
 #include <BoxTest.h>
 
-#define IMG_WIDTH 160
-#define IMG_HEIGHT 90
+#define IMG_WIDTH 320
+#define IMG_HEIGHT 180
 
 #define numOfBoxes IMG_WIDTH * IMG_HEIGHT
+
+unsigned int Boxy::VAO = 0;
 
 enum drawType{
     INSTANCED,
@@ -28,6 +30,8 @@ double getRand01(){ return (double)rand() / RAND_MAX; }
 
 void setCommonVariables()
 {
+    Boxy::VAO = Boxy::getDefaultVAO();
+
     for(int i = 0; i < numOfBoxes; i++){
         //positions[i] = glm::vec2(getRand01() * 160 - 80, getRand01() * 90 - 45);
         sizes[i] = glm::vec2(cam->baseX / IMG_WIDTH, cam->baseX / IMG_WIDTH);
