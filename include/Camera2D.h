@@ -14,13 +14,14 @@ public:
 	glm::vec2 defaultYSides = glm::vec2(-4.5f, +4.5f);
 	
 	float baseX = 16.0f;
+	float baseY = 9.0f;
 
-	glm::vec2 zoomLimits = glm::vec2(0.25, 2);
+	glm::vec2 zoomLimits = glm::vec2(0.5f, 10.0f);
 
 	glm::mat4 ortho;
 
 	GLFWwindow* window;
-	float zoom = 0.8;
+	float zoom = 1.0f;
 	float zoomInc = 0.2;
 	float dragSmth = 0.5f;
 	float neededZoom = 0;

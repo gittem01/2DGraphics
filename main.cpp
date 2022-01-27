@@ -1,6 +1,9 @@
 #include <BoxTest.h>
 
-#define numOfBoxes 30000
+#define IMG_WIDTH 160
+#define IMG_HEIGHT 90
+
+#define numOfBoxes IMG_WIDTH * IMG_HEIGHT
 
 enum drawType{
     INSTANCED,
@@ -26,9 +29,16 @@ double getRand01(){ return (double)rand() / RAND_MAX; }
 void setCommonVariables()
 {
     for(int i = 0; i < numOfBoxes; i++){
-        positions[i] = glm::vec2(getRand01() * 160 - 80, getRand01() * 90 - 45);
-        sizes[i] = glm::vec2(getRand01() + 1, (double)rand() / RAND_MAX + 1);
-        colours[i] = glm::vec4(getRand01(), getRand01(), getRand01(), 1);
+        //positions[i] = glm::vec2(getRand01() * 160 - 80, getRand01() * 90 - 45);
+        sizes[i] = glm::vec2(cam->baseX / IMG_WIDTH, cam->baseX / IMG_WIDTH);
+        colours[i] = glm::vec4(getRand01(), getRand01(), getRand01(), getRand01());
+    }
+    for (int i = 0; i < IMG_WIDTH; i++){
+        float camPosX = (((float)i / IMG_WIDTH) * cam->baseX) - cam->baseX/2.0f + (cam->baseX / 2.0f) / IMG_WIDTH;
+        for (int j = 0; j < IMG_HEIGHT; j++){
+            float camPosY = (((float)j / IMG_HEIGHT) * cam->baseY) - (cam->baseY / 2.0f) +(cam->baseX / 2.0f) / IMG_WIDTH;
+            positions[j * IMG_WIDTH + i] = glm::vec2(camPosX, camPosY);
+        }
     }
 }
 
@@ -107,11 +117,11 @@ void instancedUpdate()
 
 int main(void)
 {
-    setCommonVariables();
-
     WindowHandler* wh = new WindowHandler(NULL);
     cam = new Camera2D(glm::vec2(0, 0), wh);
     wh->cam = cam;
+
+    setCommonVariables();
 
     boxInit();
     instancedInit();
