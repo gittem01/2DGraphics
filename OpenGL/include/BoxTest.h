@@ -38,7 +38,7 @@ public:
         shader->setVec4("colour", colour.x, colour.y, colour.z, colour.w);
 
         glBindVertexArray(Boxy::VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         colour.w = colour.w + ((float)rand() / RAND_MAX) * 0.10f;
         if (colour.w > 1.0f) colour.w = 0.0f;
