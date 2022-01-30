@@ -3,6 +3,7 @@
 #include "Camera2D.h"
 #include <vector>
 #include <TextRenderer.h>
+#include <GuiWorld.h>
 
 class Rect
 {
@@ -11,7 +12,9 @@ public:
     static unsigned int VAO;
 
 	Shader* shader;
-    TextRenderer* tr;
+    GuiWorld* gw;
+
+    std::vector<GBody*> bodies;
 
     glm::vec2 pos;
 	float rotation;
@@ -28,8 +31,9 @@ public:
     std::vector<std::string> texts;
     float textSize = 3.0f;
     float extraYMargin = 0.0f;
+    float realRadius;
 
-    Rect(glm::vec2 pos, glm::vec2 size, TextRenderer* tr)
+    Rect(glm::vec2 pos, glm::vec2 size, GuiWorld* gw)
     {
         this->pos = glm::vec2(pos.x, pos.y);
         this->rotation = 0.0f;
@@ -39,7 +43,35 @@ public:
         this->fontColour = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
     
         this->shader = new Shader("../assets/shaders/Rectangle/");
-        this->tr = tr;
+        this->gw = gw;
+
+        refresh();
+    }
+
+    void refresh(){
+        if (size.x > size.y){
+            realRadius = size.y * uRadius;
+        }
+        else{
+            realRadius = size.x * uRadius;
+        }
+        
+        if (bodies.size() > 0){
+            bodies.at(0)->pos = pos;
+            bodies.at(0)->size = size;
+        }
+        else{
+            GBody* body = new GBody();
+            body->pos = pos;
+            body->size = size;
+            body->shape = RECTANGLE;
+            bodyData* data = new bodyData();
+            data->type = RECT;
+            data->data = (void*)this;
+            body->data = data;
+            bodies.push_back(body);
+            gw->bodies[gw->bodyCount++] = body;
+        }
     }
 
     void update(Camera2D* cam)
@@ -65,11 +97,11 @@ public:
 
         if (texts.size() == 1)
         {
-            tr->RenderText(texts[0], pos.x, pos.y + extraYMargin, textSize, fontColour);
+            gw->tr->RenderText(texts[0], pos.x, pos.y + extraYMargin, textSize, fontColour);
         }
         else if (texts.size() == 2){
             for (int i = 1; i < 3; i++){
-                tr->RenderText(texts[i - 1], pos.x, pos.y + (i * 2 - 3) * size.y * 0.2f + extraYMargin, textSize, fontColour);
+                gw->tr->RenderText(texts[i - 1], pos.x, pos.y + (i * 2 - 3) * size.y * 0.2f + extraYMargin, textSize, fontColour);
             }
         }
     }

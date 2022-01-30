@@ -74,38 +74,47 @@ int main(void)
     cam = new Camera2D(glm::vec2(8.0f, -4.5f), wh);
     wh->cam = cam;
 
-    GLFWcursor* cursor = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
-    // GLFW_POINTING_HAND_CURSOR
-    glfwSetCursor(wh->window, cursor);
-
     Rect::VAO = Rect::getDefaultVAO();
     std::vector<Rect*> rects;
 
     TextRenderer* tr = new TextRenderer("../assets/fonts/jbmB.ttf", cam);
-    Rect* r = new Rect(glm::vec2(8, -1.5), glm::vec2(10, 0.04), tr);
+
+    GuiWorld* gw = new GuiWorld(wh, tr);
+
+    Rect* r = new Rect(glm::vec2(8, -1), glm::vec2(10, 0.04), gw);
     r->colour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0);
     r->uRadius = 0.5f;
     r->powVal = 1.0f;
     r->uTHold = 0.5f;
     rects.push_back(r);
 
-    r = new Rect(glm::vec2(0.5, -1), glm::vec2(0.5, 0.5), tr);
+    r = new Rect(glm::vec2(0.5, -0.5), glm::vec2(0.5, 0.5), gw);
     r->colour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0);
     rects.push_back(r);
     r->texts.push_back("<");
     r->extraYMargin = -0.012f;
     r->textSize = 6.0f;
 
-    r = new Rect(glm::vec2(15.5, -1), glm::vec2(0.5, 0.5), tr);
+    r = new Rect(glm::vec2(15.5, -0.5), glm::vec2(0.5, 0.5), gw);
     r->colour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0);
     r->texts.push_back(">");
     r->extraYMargin = -0.012f;
     r->textSize = 6.0f;
     rects.push_back(r);
 
-    r = new Rect(glm::vec2(15, -8), glm::vec2(0.9, 0.5), tr);
+    r = new Rect(glm::vec2(15.3, -8.5), glm::vec2(1, 0.5), gw);
     r->colour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0);
     r->texts.push_back("Add");
+    rects.push_back(r);
+
+    r = new Rect(glm::vec2(0.85, -8.5), glm::vec2(1.5, 0.5), gw);
+    r->colour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0);
+    r->texts.push_back("Revert");
+    rects.push_back(r);
+
+    r = new Rect(glm::vec2(8, -8.5), glm::vec2(2, 0.5), gw);
+    r->colour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0);
+    r->texts.push_back("Settings");
     rects.push_back(r);
 
     float xSize = 2.0f;
@@ -117,7 +126,7 @@ int main(void)
     const char* texts2[7] = {"24/1/2022", "25/1/2022", "26/1/2022", "27/1/2022", "28/1/2022", "29/1/2022", "30/1/2022"};
 
     for (int i = 0; i < 7; i++){
-        r = new Rect(glm::vec2(i * (xSize + margin) + margin + xSize / 2.0f, -2.5f), glm::vec2(xSize, ySize), tr);
+        r = new Rect(glm::vec2(i * (xSize + margin) + margin + xSize / 2.0f, -1.75f), glm::vec2(xSize, ySize), gw);
         r->colour = glm::vec4(0.3f, 0.3f, 0.8f, 1.0);
         r->outColour = glm::vec4(0.0f, 0.0f, 0.0f, 1.0);
         r->uTHold = 0.05f;
@@ -131,6 +140,7 @@ int main(void)
             r->outColour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0);;
             r->uTHold = 0.1f;
         }
+        r->refresh();
         rects.push_back(r);
     }
 
@@ -145,7 +155,8 @@ int main(void)
     std::string err;
     const auto json = json11::Json::parse(simple_test, err);
 
-    printf("Error : %s\n", err.c_str());
+    if (err.size() > 0)
+        printf("Error : %s\n", err.c_str());
 
     int yPositions[] = {0, 0, 0, 0, 0, 0, 0};
 
@@ -154,7 +165,7 @@ int main(void)
         std::string lecName = j["name"].string_value();
         std::string times = j["time"].string_value();
         yPositions[wDay] += 1;
-        Rect* r = new Rect(glm::vec2(wDay * (xSize + margin) + margin + xSize / 2.0f, -2.5f - yPositions[wDay]), glm::vec2(xSize, ySize), tr);
+        Rect* r = new Rect(glm::vec2(wDay * (xSize + margin) + margin + xSize / 2.0f, -1.75f - yPositions[wDay]), glm::vec2(xSize, ySize), gw);
         r->colour = glm::vec4(0.9, 0.9, 0.9, 1.0);
         r->outColour = glm::vec4(0.0f, 0.0f, 0.0f, 1.0);
         r->uTHold = 0.05f;
@@ -166,22 +177,35 @@ int main(void)
         rects.push_back(r);
     }
 
+    cam->update();
+    bool camEnable = false;
     bool done = false;
     while (!done){
-        cam->update();
         glfwSwapInterval(1);
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         done = wh->looper();
 
+        if (camEnable) cam->update();
+
         for (int i = 0; i < rects.size(); i++){
             rects.at(i)->update(cam);
         }
 
-        tr->RenderText(head, 8, -1, 6.0f, glm::vec3(1, 1, 1));
+        tr->RenderText(head, 8, -0.5, 6.0f, glm::vec3(1, 1, 1));
 
         glfwSwapBuffers(wh->window);
+
+        if (wh->keyData[GLFW_KEY_SPACE] == 2){
+            camEnable ^= 1;
+        }
+        if (wh->keyData[GLFW_KEY_R] == 2){
+            cam->pos = glm::vec2(8.0f, -4.5f);
+            cam->zoom = 1.0f;
+        }
+
+        gw->loop();
 
         //std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
