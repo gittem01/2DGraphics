@@ -18,7 +18,7 @@ public:
 	double* mouseData = (double*)calloc(7, sizeof(double));
 	double* trackpadData = (double*)calloc(2, sizeof(double));
 	int* lastMousePos = (int*)calloc(2, sizeof(int));
-	glm::vec2 windowSizes = glm::vec2(1280, 720);
+	glm::vec2 windowSizes = glm::vec2(800, 800);
 	bool releaseQueue[3] = {false, false, false};
 	float dpiScaling = 1.0f;
 	std::set<int> newPressIndices;

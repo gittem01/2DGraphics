@@ -1,7 +1,7 @@
 #include <BoxTest.h>
 
-#define IMG_WIDTH 480 // 16 * 30
-#define IMG_HEIGHT 270 // 9 * 30
+#define IMG_WIDTH 160 // 16 * 30
+#define IMG_HEIGHT 160 // 16 * 30
 
 #define numOfBoxes IMG_WIDTH * IMG_HEIGHT
 
