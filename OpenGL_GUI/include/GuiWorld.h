@@ -52,6 +52,7 @@ private:
     GLFWcursor* handCursor;
 
 public:
+    bool shouldRender = true;
     
     GuiWorld(WindowHandler* wh, TextRenderer* tr);
 

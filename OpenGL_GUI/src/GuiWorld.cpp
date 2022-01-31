@@ -69,6 +69,7 @@ void GuiWorld::loop(){
             if (r->clickable){
                 r->uTHold = oldVals[0];
                 r->uRadius = oldVals[1];
+                shouldRender = true;
             }
             hoveringBody = nullptr;
         }
@@ -93,6 +94,7 @@ void GuiWorld::loop(){
             oldVals[1] = r->uRadius;
             r->uTHold = 0.1f;
             r->uRadius = 0.25f;
+            shouldRender = true;
             glfwSetCursor(wh->window, handCursor);
         }
     }
@@ -106,22 +108,25 @@ void GuiWorld::loop(){
     }
     if (hoveringBody == clickedBody && clickedBody){
         Rect* r = (Rect*)((bodyData*)(clickedBody)->data)->data;
-        if (wh->mouseData[2] == 2){
+        if (wh->mouseData[2] == 2 && r->clickable){
             oldVals[2] = r->powVal;
             r->powVal = 4.0f;
+            shouldRender = true;
             // click
         }
     }
     else if (clickedBody){
         Rect* r = (Rect*)((bodyData*)(clickedBody)->data)->data;
         r->powVal = oldVals[2];
+        shouldRender = true;
     }
     if (wh->mouseData[2] == 0 && clickedBody){
         Rect* r = (Rect*)((bodyData*)(clickedBody)->data)->data;
         bool isIn = checkBodyCollision(clickedBody, mousePosition);
-        if (isIn){
+        if (isIn && r->clickable){
             // click and release on same body
             r->powVal = oldVals[2];
+            shouldRender = true;
         }
         clickedBody = nullptr;
     }
