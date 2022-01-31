@@ -67,9 +67,10 @@ void GuiWorld::loop(){
         else{
             Rect* r = (Rect*)((bodyData*)(hoveringBody)->data)->data;
             if (r->clickable){
+                glfwSetCursor(wh->window, arrowCursor);
                 r->uTHold = oldVals[0];
                 r->uRadius = oldVals[1];
-                shouldRender = true;
+                wh->shouldRender = true;
             }
             hoveringBody = nullptr;
         }
@@ -94,7 +95,7 @@ void GuiWorld::loop(){
             oldVals[1] = r->uRadius;
             r->uTHold = 0.1f;
             r->uRadius = 0.25f;
-            shouldRender = true;
+            wh->shouldRender = true;
             glfwSetCursor(wh->window, handCursor);
         }
     }
@@ -104,29 +105,32 @@ void GuiWorld::loop(){
     else if (!hoveringBody && lastHover){
         // hover ended
         lastHover = nullptr;
-        glfwSetCursor(wh->window, arrowCursor);
     }
     if (hoveringBody == clickedBody && clickedBody){
-        Rect* r = (Rect*)((bodyData*)(clickedBody)->data)->data;
-        if (wh->mouseData[2] == 2 && r->clickable){
-            oldVals[2] = r->powVal;
-            r->powVal = 4.0f;
-            shouldRender = true;
-            // click
+        if (wh->mouseData[2] == 2){
+            Rect* r = (Rect*)((bodyData*)(clickedBody)->data)->data;
+            if (r->clickable){
+                // click
+                oldVals[2] = r->powVal;
+                r->powVal = 4.0f;
+                wh->shouldRender = true;
+            }
         }
     }
     else if (clickedBody){
+        // still clicked but otside of body
         Rect* r = (Rect*)((bodyData*)(clickedBody)->data)->data;
         r->powVal = oldVals[2];
-        shouldRender = true;
+        wh->shouldRender = true;
     }
     if (wh->mouseData[2] == 0 && clickedBody){
+        // released outside of body
         Rect* r = (Rect*)((bodyData*)(clickedBody)->data)->data;
         bool isIn = checkBodyCollision(clickedBody, mousePosition);
         if (isIn && r->clickable){
             // click and release on same body
             r->powVal = oldVals[2];
-            shouldRender = true;
+            wh->shouldRender = true;
         }
         clickedBody = nullptr;
     }

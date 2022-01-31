@@ -25,6 +25,8 @@ public:
 	GLFWwindow* window;
 	Camera2D* cam;
 
+	bool shouldRender = true;
+
 	WindowHandler(Camera2D* cam);
 
 	void massInit();

@@ -51,9 +51,7 @@ private:
     GLFWcursor* arrowCursor;
     GLFWcursor* handCursor;
 
-public:
-    bool shouldRender = true;
-    
+public:    
     GuiWorld(WindowHandler* wh, TextRenderer* tr);
 
     void loop();

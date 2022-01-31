@@ -96,9 +96,6 @@ void WindowHandler::massInit()
         std::exit(-1);
     }
 
-    glfwWindowHint(GLFW_SAMPLES, 4);
-    glEnable(GL_MULTISAMPLE);
-
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -169,4 +166,5 @@ void WindowHandler::windowSizeEventCallback(GLFWwindow* window, int width, int h
 
     thisClass->cam->defaultYSides = glm::vec2(-thisClass->cam->baseX * ratio * 0.5f, thisClass->cam->baseX * ratio * 0.5f);
     thisClass->cam->update();
+    thisClass->shouldRender = true;
 }

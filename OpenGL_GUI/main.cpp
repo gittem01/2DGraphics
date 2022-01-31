@@ -175,11 +175,10 @@ int main(void)
     while (!done){
         done = wh->looper();
 
-        if (camEnable) cam->update();
-
+        //cam->update();
+        
         gw->loop();
-
-        if (gw->shouldRender){
+        if (wh->shouldRender){
             glfwSwapInterval(1);
             glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
@@ -191,17 +190,10 @@ int main(void)
             tr->RenderText(head, 8, -0.5, 6.0f, glm::vec3(1, 1, 1));
 
             glfwSwapBuffers(wh->window);
-            gw->shouldRender = false;
+            wh->shouldRender = false;
         }   
         else{
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
-        if (wh->keyData[GLFW_KEY_SPACE] == 2){
-            camEnable ^= 1;
-        }
-        if (wh->keyData[GLFW_KEY_R] == 2){
-            cam->pos = glm::vec2(8.0f, -4.5f);
-            cam->zoom = 1.0f;
         }
     }
 
