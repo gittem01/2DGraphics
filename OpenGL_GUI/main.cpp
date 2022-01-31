@@ -86,55 +86,45 @@ int main(void)
     r->uRadius = 0.5f;
     r->powVal = 1.0f;
     r->uTHold = 0.5f;
+    r->clickable = false;
     rects.push_back(r);
 
-    r = new Rect(glm::vec2(0.5, -0.5), glm::vec2(0.5, 0.5), gw);
-    r->colour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0);
-    rects.push_back(r);
-    r->texts.push_back("<");
-    r->extraYMargin = -0.012f;
-    r->textSize = 6.0f;
-
-    r = new Rect(glm::vec2(15.5, -0.5), glm::vec2(0.5, 0.5), gw);
-    r->colour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0);
-    r->texts.push_back(">");
-    r->extraYMargin = -0.012f;
-    r->textSize = 6.0f;
-    rects.push_back(r);
-
-    r = new Rect(glm::vec2(15.3, -8.5), glm::vec2(1, 0.5), gw);
-    r->colour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0);
+    r = new Rect(glm::vec2(15, -0.5), glm::vec2(1.5, 0.5), gw);
+    r->colour = glm::vec4(0.9f, 0.9f, 0.9f, 1.0);
+    r->outColour = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
     r->texts.push_back("Add");
+    r->powVal = 1.0f;
+    r->textSize = 2.5f;
     rects.push_back(r);
 
-    r = new Rect(glm::vec2(0.85, -8.5), glm::vec2(1.5, 0.5), gw);
-    r->colour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0);
+    r = new Rect(glm::vec2(1, -0.5), glm::vec2(1.5f, 0.5), gw);
+    r->colour = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
+    r->fontColour = glm::vec4(0.9f, 0.9f, 0.9f, 1.0f);
+    r->powVal = 1.0f;
     r->texts.push_back("Revert");
-    rects.push_back(r);
-
-    r = new Rect(glm::vec2(8, -8.5), glm::vec2(2, 0.5), gw);
-    r->colour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0);
-    r->texts.push_back("Settings");
+    r->textSize = 2.5f;
     rects.push_back(r);
 
     float xSize = 2.0f;
-    float ySize = 0.9f;
+    float ySize = 1.0f;
     float margin = cam->baseX - xSize * 7;
     margin /= 8.0f;
 
     const char* texts1[7] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
-    const char* texts2[7] = {"24/1/2022", "25/1/2022", "26/1/2022", "27/1/2022", "28/1/2022", "29/1/2022", "30/1/2022"};
+    // manual for now
+    const char* texts2[7] = {"31/1/2022", "01/2/2022", "02/2/2022", "03/2/2022", "04/2/2022", "05/2/2022", "06/2/2022"};
 
     for (int i = 0; i < 7; i++){
         r = new Rect(glm::vec2(i * (xSize + margin) + margin + xSize / 2.0f, -1.75f), glm::vec2(xSize, ySize), gw);
         r->colour = glm::vec4(0.3f, 0.3f, 0.8f, 1.0);
         r->outColour = glm::vec4(0.0f, 0.0f, 0.0f, 1.0);
         r->uTHold = 0.05f;
-        r->powVal = 4.0f;
+        r->powVal = 2.0f;
         r->uRadius = 0.15f;
-        r->textSize = 2.5f;
-        r->texts.push_back(texts1[i]);
+        r->textSize = 2.75f * ySize;
         r->texts.push_back(texts2[i]);
+        r->texts.push_back(texts1[i]);
+        r->clickable = false;
         if (i == thisDay){
             r->colour = glm::vec4(0.3f, 0.8f, 0.8f, 1.0);
             r->outColour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0);;
@@ -165,15 +155,17 @@ int main(void)
         std::string lecName = j["name"].string_value();
         std::string times = j["time"].string_value();
         yPositions[wDay] += 1;
-        Rect* r = new Rect(glm::vec2(wDay * (xSize + margin) + margin + xSize / 2.0f, -1.75f - yPositions[wDay]), glm::vec2(xSize, ySize), gw);
+        Rect* r = new Rect(glm::vec2(wDay * (xSize + margin) + margin + xSize / 2.0f, -1.75f - yPositions[wDay] * (ySize * 1.1f)),
+            glm::vec2(xSize, ySize), gw);
         r->colour = glm::vec4(0.9, 0.9, 0.9, 1.0);
         r->outColour = glm::vec4(0.0f, 0.0f, 0.0f, 1.0);
         r->uTHold = 0.05f;
-        r->powVal = 4.0f;
-        r->uRadius = 0.15f;
-        r->textSize = 2.5f;
-        r->texts.push_back(lecName);
+        r->powVal = 2.0f;
+        r->uRadius = 0.2f;
+        r->textSize = 2.75f * ySize;
         r->texts.push_back(times);
+        r->texts.push_back(lecName);
+        r->refresh();
         rects.push_back(r);
     }
 
@@ -188,6 +180,8 @@ int main(void)
         done = wh->looper();
 
         if (camEnable) cam->update();
+
+        gw->loop();
 
         for (int i = 0; i < rects.size(); i++){
             rects.at(i)->update(cam);
@@ -204,8 +198,6 @@ int main(void)
             cam->pos = glm::vec2(8.0f, -4.5f);
             cam->zoom = 1.0f;
         }
-
-        gw->loop();
 
         //std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }

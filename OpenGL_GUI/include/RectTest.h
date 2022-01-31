@@ -33,12 +33,14 @@ public:
     float extraYMargin = 0.0f;
     float realRadius;
 
+    bool clickable = true;
+
     Rect(glm::vec2 pos, glm::vec2 size, GuiWorld* gw)
     {
         this->pos = glm::vec2(pos.x, pos.y);
         this->rotation = 0.0f;
         this->size = glm::vec2(size.x, size.y);
-        this->colour = glm::vec4(0.2f, 0.2f, 0.2f, 0.0);
+        this->colour = glm::vec4(0.2f, 0.2f, 0.2f, 1.0);
         this->outColour = glm::vec4(1, 1, 1, 1.0);
         this->fontColour = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
     
@@ -70,7 +72,7 @@ public:
             data->data = (void*)this;
             body->data = data;
             bodies.push_back(body);
-            gw->bodies[gw->bodyCount++] = body;
+            gw->addBody(body);
         }
     }
 

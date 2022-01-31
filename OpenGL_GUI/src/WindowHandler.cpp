@@ -7,8 +7,8 @@ WindowHandler::WindowHandler(Camera2D* cam)
     this->massInit();
 
     // starting cursor from the middle of the screen instead of the top left corner
-    this->mouseData[0] = windowSizes.x / 2.0f;
-    this->mouseData[1] = windowSizes.y / 2.0f;
+    this->mouseData[0] = DBL_MAX;
+    this->mouseData[1] = DBL_MAX;
 }
 
 void WindowHandler::handleMouseData()
@@ -49,6 +49,7 @@ bool WindowHandler::looper()
     handleMouseData();
     handleKeyData();
     
+    
     glfwPollEvents();
 
     bool done = glfwWindowShouldClose(window);  
@@ -68,7 +69,7 @@ void WindowHandler::massInit()
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    window = glfwCreateWindow(windowSizes.x, windowSizes.y, "Zoom Helper", NULL, NULL);
+    window = glfwCreateWindow(windowSizes.x, windowSizes.y, "Auto Zoom", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -108,8 +109,8 @@ void WindowHandler::massInit()
 void WindowHandler::mouseEventCallback(GLFWwindow* window, double xpos, double ypos)
 {
     WindowHandler* thisClass = (WindowHandler*)glfwGetWindowUserPointer(window);
-    thisClass->mouseData[0] = (int)xpos;
-    thisClass->mouseData[1] = (int)ypos;
+    thisClass->mouseData[0] = xpos;
+    thisClass->mouseData[1] = ypos;
 }
 
 void WindowHandler::buttonEventCallback(GLFWwindow* window, int button, int action, int mods)
@@ -167,4 +168,5 @@ void WindowHandler::windowSizeEventCallback(GLFWwindow* window, int width, int h
     float ratio = (float)height / width;
 
     thisClass->cam->defaultYSides = glm::vec2(-thisClass->cam->baseX * ratio * 0.5f, thisClass->cam->baseX * ratio * 0.5f);
+    thisClass->cam->update();
 }

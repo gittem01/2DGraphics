@@ -27,7 +27,7 @@ public:
 	float neededZoom = 0.0f;
 	glm::vec2 zoomPoint;
 	glm::vec2* lastPos = new glm::vec2(-1, -1);
-	glm::vec2* dragTo = new glm::vec2(0, 0);
+	glm::vec2* dragTo = new glm::vec2(-1, -1);
 
 	WindowHandler* wh;
 

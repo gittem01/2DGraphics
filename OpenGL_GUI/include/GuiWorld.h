@@ -23,6 +23,7 @@ typedef struct GBody{
     bodyType shape;
     glm::vec2 pos;
     glm::vec2 size; // use x only for circle
+    GBody* next;
     bodyData* data;
 } GBody;
 
@@ -33,10 +34,19 @@ friend class Rect;
 
 private:
     
-    GBody** bodies;
+    GBody* bodyHead;
+    GBody* bodyTail;
+
+    GBody* hoveringBody;
+    GBody* clickedBody;
+    GBody* lastHover;
+
+    float oldVals[3];
+
     WindowHandler* wh;
     TextRenderer* tr;
     int bodyCount;
+    void addBody(GBody* body);
 
     GLFWcursor* arrowCursor;
     GLFWcursor* handCursor;
