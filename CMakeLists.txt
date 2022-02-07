@@ -13,12 +13,13 @@ include_directories(${CMAKE_SOURCE_DIR}/third_party/GLFW/include)
 include_directories(${CMAKE_SOURCE_DIR}/third_party/GLAD/include)
 include_directories(${CMAKE_SOURCE_DIR}/third_party/freetype/include)
 include_directories(${CMAKE_SOURCE_DIR}/third_party/json)
+include_directories(${CMAKE_SOURCE_DIR}/third_party/vulkan/include)
 
 add_library(GLAD STATIC ${CMAKE_SOURCE_DIR}/third_party/GLAD/src/glad.c)
 add_library(JSON STATIC ${CMAKE_SOURCE_DIR}/third_party/json/json11.cpp)
-
 
 find_package(OpenGL REQUIRED)
 
 add_subdirectory(OpenGL)
 add_subdirectory(OpenGL_GUI)
+add_subdirectory(Vulkan)
