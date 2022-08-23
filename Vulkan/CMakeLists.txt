@@ -10,16 +10,18 @@ include_directories(include)
 
 add_executable(VkGraphics2D main.c)
 
-file(GLOB sourceFiles src/*.c)
+file(GLOB sourceFiles src/*.c*)
 file(GLOB headerFiles include/*.h)
+
+message(${sourceFiles})
 
 add_library(vkMines ${headerFiles} ${sourceFiles})
 
-# target_link_libraries(VkGraphics2D vkMines)
+target_link_libraries(VkGraphics2D vkMines)
 target_link_libraries(VkGraphics2D glfw)
 
 if (APPLE)
-	target_link_libraries(VkGraphics2D vulkanMac.dylib)
+	target_link_libraries(VkGraphics2D vulkan)
 elseif(UNIX)
 	target_link_libraries(VkGraphics2D vulkanUnx)
 elseif(WIN32)

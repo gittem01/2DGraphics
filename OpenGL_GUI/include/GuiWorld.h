@@ -38,7 +38,6 @@ private:
     GBody* bodyTail;
 
     GBody* hoveringBody;
-    GBody* clickedBody;
     GBody* lastHover;
 
     float oldVals[3];

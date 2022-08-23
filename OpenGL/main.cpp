@@ -1,7 +1,7 @@
 #include <BoxTest.h>
 
-#define IMG_WIDTH 160 // 16 * 30
-#define IMG_HEIGHT 160 // 16 * 30
+#define IMG_WIDTH 300 // 16 * 30
+#define IMG_HEIGHT 300 // 16 * 30
 
 #define numOfBoxes IMG_WIDTH * IMG_HEIGHT
 
@@ -17,7 +17,7 @@ Camera2D* cam;
 
 glm::vec2 positions[numOfBoxes];
 glm::vec2 sizes[numOfBoxes];
-glm::vec4 colours[numOfBoxes];
+std::vector<glm::vec4> colours;
 
 Boxy* boxes[numOfBoxes];
 Boxy* instancedBox;
@@ -36,10 +36,10 @@ void setCommonVariables()
     for(int i = 0; i < numOfBoxes; i++){
         //positions[i] = glm::vec2(getRand01() * 160 - 80, getRand01() * 90 - 45);
         sizes[i] = glm::vec2(cam->baseX / IMG_WIDTH, cam->baseX / IMG_WIDTH);
-        colours[i] = glm::vec4(getRand01(), getRand01(), getRand01(), getRand01());
+        colours.push_back(glm::vec4(getRand01(), getRand01(), getRand01(), getRand01()));
     }
     for (int i = 0; i < IMG_WIDTH; i++){
-        float camPosX = (((float)i / IMG_WIDTH) * cam->baseX) - cam->baseX/2.0f + (cam->baseX / 2.0f) / IMG_WIDTH;
+        float camPosX = (((float)i / IMG_WIDTH) * cam->baseX) - cam->baseX / 2.0f + (cam->baseX / 2.0f) / IMG_WIDTH;
         for (int j = 0; j < IMG_HEIGHT; j++){
             float camPosY = (((float)j / IMG_HEIGHT) * cam->baseY) - (cam->baseY / 2.0f) +(cam->baseX / 2.0f) / IMG_WIDTH;
             positions[j * IMG_WIDTH + i] = glm::vec2(camPosX, camPosY);
@@ -82,7 +82,7 @@ void instancedInit()
 
     glGenBuffers(1, &colour_SBO);
     glBindBuffer(GL_ARRAY_BUFFER, colour_SBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(colours), colours, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(colours.at(0)) * colours.size(), colours.data(), GL_DYNAMIC_DRAW);
 
     glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
@@ -110,7 +110,7 @@ void instancedUpdate()
 
     glBindBuffer(colour_SBO, GL_ARRAY_BUFFER);
     void *ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-    memcpy(ptr, colours, sizeof(colours));
+    memcpy(ptr, colours.data(), sizeof(colours.at(0)) * colours.size());
     glUnmapBuffer(GL_ARRAY_BUFFER);
 
     glBindVertexArray(instancedBox->VAO);
@@ -119,6 +119,17 @@ void instancedUpdate()
 
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, numOfBoxes);
 }
+
+class Test{
+
+public:
+    Test(){
+        printf("hey\n");
+    }
+    ~Test(){
+        printf("bye\n");
+    }
+};
 
 int main(void)
 {

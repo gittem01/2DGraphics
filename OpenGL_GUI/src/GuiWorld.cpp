@@ -12,7 +12,6 @@ GuiWorld::GuiWorld(WindowHandler* wh, TextRenderer* tr){
     this->bodyTail = bodyHead;
 
     this->hoveringBody = nullptr;
-    this->clickedBody = nullptr;
     this->lastHover = nullptr;
 
     arrowCursor = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
@@ -86,7 +85,7 @@ void GuiWorld::loop(){
         }
     }
 
-    if (hoveringBody && lastHover != hoveringBody && (!clickedBody || clickedBody == hoveringBody)){
+    if (hoveringBody && lastHover != hoveringBody){
         lastHover = hoveringBody;
         // hover started
         Rect* r = (Rect*)((bodyData*)(hoveringBody)->data)->data;
@@ -99,39 +98,8 @@ void GuiWorld::loop(){
             glfwSetCursor(wh->window, handCursor);
         }
     }
-    if (wh->mouseData[2] == 2){
-        clickedBody = hoveringBody;
-    }
-    else if (!hoveringBody && lastHover){
+    if (!hoveringBody && lastHover){
         // hover ended
         lastHover = nullptr;
-    }
-    if (hoveringBody == clickedBody && clickedBody){
-        if (wh->mouseData[2] == 2){
-            Rect* r = (Rect*)((bodyData*)(clickedBody)->data)->data;
-            if (r->clickable){
-                // click
-                oldVals[2] = r->powVal;
-                r->powVal = 4.0f;
-                wh->shouldRender = true;
-            }
-        }
-    }
-    else if (clickedBody){
-        // still clicked but otside of body
-        Rect* r = (Rect*)((bodyData*)(clickedBody)->data)->data;
-        r->powVal = oldVals[2];
-        wh->shouldRender = true;
-    }
-    if (wh->mouseData[2] == 0 && clickedBody){
-        // released outside of body
-        Rect* r = (Rect*)((bodyData*)(clickedBody)->data)->data;
-        bool isIn = checkBodyCollision(clickedBody, mousePosition);
-        if (isIn && r->clickable){
-            // click and release on same body
-            r->powVal = oldVals[2];
-            wh->shouldRender = true;
-        }
-        clickedBody = nullptr;
     }
 }

@@ -50,7 +50,6 @@ unsigned int Shader::createShader(unsigned int shaderType, std::string code)
 
 void Shader::createProgram()
 {
-
 	this->ID = glCreateProgram();
 
 	for (int i = 0; i < 3; i++) {
