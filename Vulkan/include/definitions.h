@@ -3,8 +3,41 @@
 
 #include <vulkan/vulkan.h>
 #include <stdio.h>
+#include <math.h>
 
 #define PRINT_INFO_MESSAGES
+
+typedef struct
+{
+    VkQueue graphicsQueue;
+    uint32_t graphicsQueueIndex;
+} queueData;
+
+typedef struct
+{
+    VkPhysicalDeviceProperties deviceProperties;
+} vulkanInfo;
+
+typedef struct
+{
+    VkSwapchainKHR swapChain;
+    VkSurfaceFormatKHR surfaceFormat;
+    VkExtent2D extent;
+    VkImage* images;
+    VkImageView* imageViews;
+} swapChainData;
+
+typedef struct
+{
+    vulkanInfo* vulkan_info;
+    VkInstance instance;
+    VkSurfaceKHR surface;
+    VkPhysicalDevice physicalDevice;
+    VkDevice logicalDevice;
+    queueData queues;
+    swapChainData* swapChainData;
+
+} vulkanThings;
 
 static VkResult ERROR_VALUES[]
 =
@@ -142,7 +175,7 @@ static void printVkError(VkResult error)
 
 #define CHECK_RESULT_VK(result)     \
 {                                   \
-    if (result != VK_SUCCESS)       \
+    if ((result) != VK_SUCCESS)     \
     {                               \
         printVkError(result);       \
         exit(1);                    \

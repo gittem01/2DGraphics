@@ -6,29 +6,9 @@
 #include <GLFW/glfw3.h>
 #include <string.h>
 
-typedef struct
-{
-    VkQueue graphicsQueue;
-    uint32_t graphicsQueueIndex;
-} queueData;
+void vk_createSwapChain(vulkanThings* vk_things, GLFWwindow* window);
 
-typedef struct
-{
-    VkPhysicalDeviceProperties deviceProperties;
-} vulkanInfo;
-
-typedef struct
-{
-    vulkanInfo vulkan_info;
-    VkInstance instance;
-    VkSurfaceKHR surface;
-    VkPhysicalDevice physicalDevice;
-    VkDevice logicalDevice;
-    queueData queues;
-
-} vulkanThings;
-
-void vk_createInstance(VkInstance* instance);
+void vk_createInstance(vulkanThings* vulkan_things);
 void vk_selectPhysicalDevice(vulkanThings* vulkan_things);
 void vk_createLogicalDevice(vulkanThings* vulkan_things);
 

@@ -6,7 +6,7 @@ const char* ENABLE_EXTENSIONS[] = {
 
 const int NUM_ENABLE_EXTENSIONS = sizeof(ENABLE_EXTENSIONS) / sizeof(ENABLE_EXTENSIONS[0]);
 
-void vk_createInstance(VkInstance* instance)
+void vk_createInstance(vulkanThings* vulkan_things)
 {
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -40,34 +40,38 @@ void vk_createInstance(VkInstance* instance)
     instanceInfo.enabledExtensionCount = extensionCount;
     instanceInfo.ppEnabledExtensionNames = requiredExtensions;
 
-    CHECK_RESULT_VK(vkCreateInstance(&instanceInfo, NULL, instance));
+    CHECK_RESULT_VK(vkCreateInstance(&instanceInfo, NULL, &vulkan_things->instance))
 
     free(requiredExtensions);
 }
 
-static int isDeviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface){
+static int isDeviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+{
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
 	VkSurfaceFormatKHR* surfaceFormats;
 	VkPresentModeKHR* presentModes;
 
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities);
 
-	uint32_t formatCount;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, NULL);
+	int formatCount;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, (uint32_t*)&formatCount, NULL);
 	if (formatCount != 0) {
 		surfaceFormats = malloc(sizeof(VkSurfaceFormatKHR) * formatCount);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, surfaceFormats);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, (uint32_t*)&formatCount, surfaceFormats);
 	}
 
-	uint32_t presentModeCount;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, NULL);
+	int presentModeCount;
+	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, (uint32_t*)&presentModeCount, NULL);
 	if (presentModeCount != 0) {
 		presentModes = malloc(sizeof(VkPresentModeKHR) * presentModeCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, (uint32_t*)&presentModeCount, presentModes);
 	}
-
-	free(surfaceFormats);
-	free(presentModes);
+    if (formatCount != 0){
+        free(surfaceFormats);
+    }
+	if (presentModeCount != 0){
+        free(presentModes);
+    }
 
 	return presentModeCount != 0 && formatCount != 0;
 }
@@ -94,7 +98,7 @@ void vk_selectPhysicalDevice(vulkanThings* vulkan_things)
 		VkQueueFamilyProperties* queueFamilies = malloc(sizeof(VkQueueFamilyProperties) * queueFamilyCount);
 		vkGetPhysicalDeviceQueueFamilyProperties(devices[i], &queueFamilyCount, queueFamilies);
 
-		if (isDeviceSuitable(devices[i], vulkan_things->surface)){
+		if (isDeviceSuitable(devices[i], vulkan_things->surface)) {
 			for (uint32_t j = 0; j < queueFamilyCount; j++) {
 				VkBool32 presentSupported;
 				vkGetPhysicalDeviceSurfaceSupportKHR(devices[i], j, vulkan_things->surface, &presentSupported);
@@ -102,9 +106,9 @@ void vk_selectPhysicalDevice(vulkanThings* vulkan_things)
 					vulkan_things->physicalDevice = devices[i];
 					vulkan_things->queues.graphicsQueueIndex = j;
 
-	                vkGetPhysicalDeviceProperties(devices[i], &vulkan_things->vulkan_info.deviceProperties);
+	                vkGetPhysicalDeviceProperties(devices[i], &vulkan_things->vulkan_info->deviceProperties);
                 #if PRINT_INFO_MESSAGES 1
-                    printf("Selected GPU : %s\n", vulkan_things->vulkan_info.deviceProperties.deviceName);
+                    printf("Selected GPU : %s\n", vulkan_things->vulkan_info->deviceProperties.deviceName);
                 #endif
 
 					break;
@@ -115,10 +119,10 @@ void vk_selectPhysicalDevice(vulkanThings* vulkan_things)
 	}
 	free(devices);
 
-	if (vulkan_things->physicalDevice == VK_NULL_HANDLE) {
-		printf("failed to find a suitable GPU!");
-        exit(1);
-	}
+//	if (vulkan_things->physicalDevice == VK_NULL_HANDLE) {
+//		printf("failed to find a suitable GPU!");
+//        exit(1);
+//	}
 }
 
 void vk_createLogicalDevice(vulkanThings* vulkan_things)
@@ -140,7 +144,7 @@ void vk_createLogicalDevice(vulkanThings* vulkan_things)
 	
     int found = 0;
     for (uint32_t i = 0; i < extensionPropertyCount; i++) {
-		if (strcmp(extensionProperties[i].extensionName, "VK_KHR_portability_subset") == 0){
+		if (strcmp(extensionProperties[i].extensionName, "VK_KHR_portability_subset") == 0) {
             found = 1;
             break;
 		}
@@ -157,7 +161,7 @@ void vk_createLogicalDevice(vulkanThings* vulkan_things)
 
     const char** enabledExtensions = malloc(sizeof(const char*) * extensionCount);
     memcpy(enabledExtensions, ENABLE_EXTENSIONS, NUM_ENABLE_EXTENSIONS * sizeof(const char*));
-    if (found){
+    if (found) {
         enabledExtensions[NUM_ENABLE_EXTENSIONS] = "VK_KHR_portability_subset";
     }
 
@@ -169,7 +173,7 @@ void vk_createLogicalDevice(vulkanThings* vulkan_things)
 	deviceCreateInfo.enabledExtensionCount = extensionCount;
 	deviceCreateInfo.ppEnabledExtensionNames = enabledExtensions;
 
-	CHECK_RESULT_VK(vkCreateDevice(vulkan_things->physicalDevice, &deviceCreateInfo, NULL, &vulkan_things->logicalDevice));
+	CHECK_RESULT_VK(vkCreateDevice(vulkan_things->physicalDevice, &deviceCreateInfo, NULL, &vulkan_things->logicalDevice))
 
 	vkGetDeviceQueue(vulkan_things->logicalDevice, vulkan_things->queues.graphicsQueueIndex, 0, &vulkan_things->queues.graphicsQueue);
 

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 project(VkGraphics2D VERSION 1.0.0)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_C_STANDARD 17)
 
 # put this before add_executable else get linker error
 link_directories(${CMAKE_SOURCE_DIR}/third_party/vulkan/lib)
@@ -17,8 +17,7 @@ message(${sourceFiles})
 
 add_library(vkMines ${headerFiles} ${sourceFiles})
 
-target_link_libraries(VkGraphics2D vkMines)
-target_link_libraries(VkGraphics2D glfw)
+target_link_libraries(VkGraphics2D vkMines glfw m)
 
 if (APPLE)
 	target_link_libraries(VkGraphics2D vulkan)
