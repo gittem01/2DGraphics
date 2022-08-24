@@ -4,6 +4,8 @@
 #include <vulkan/vulkan.h>
 #include <stdio.h>
 
+#define PRINT_INFO_MESSAGES
+
 static VkResult ERROR_VALUES[]
 =
 {
