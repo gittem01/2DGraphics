@@ -26,9 +26,10 @@ void vk_createInstance(VkInstance* instance)
 
 #ifdef __APPLE__
 	instanceInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
-    extensionCount = glfwExtensionCount + 1;
+    extensionCount = glfwExtensionCount + 2;
     const char** requiredExtensions = malloc(sizeof(char*) * extensionCount);
     requiredExtensions[glfwExtensionCount] = VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
+    requiredExtensions[glfwExtensionCount + 1] = "VK_KHR_get_physical_device_properties2";
 #else
     extensionCount = glfwExtensionCount;
     const char** requiredExtensions = malloc(sizeof(char*) * glfwExtensionCount);
