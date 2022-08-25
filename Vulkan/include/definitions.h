@@ -7,10 +7,20 @@
 
 #define PRINT_INFO_MESSAGES
 
+#define NUM_FRAMES 2
+
+typedef struct{
+    VkCommandPool commandPool;
+	VkCommandBuffer commandBuffer;
+    VkFence renderFence;
+    VkSemaphore presentSemaphore;
+    VkSemaphore renderSemaphore;
+} St_frameData;
+
 typedef struct
 {
     VkQueue graphicsQueue;
-    uint32_t graphicsQueueIndex;
+    uint32_t graphicsQueueFamilyIndex;
 } St_queueData;
 
 typedef struct
@@ -40,6 +50,9 @@ typedef struct
     St_queueData queues;
     St_swapChainData* swapChainData;
     VkRenderPass renderPass;
+    VkCommandPool uploadPool;
+    VkFence uploadFence;
+    St_frameData frames[NUM_FRAMES];
 
 } St_vulkanThings;
 

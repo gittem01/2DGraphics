@@ -104,7 +104,7 @@ void vk_selectPhysicalDevice(St_vulkanThings* vulkanThings)
 				vkGetPhysicalDeviceSurfaceSupportKHR(devices[i], j, vulkanThings->surface, &presentSupported);
 				if (queueFamilies[j].queueFlags & VK_QUEUE_GRAPHICS_BIT && presentSupported) {
 					vulkanThings->physicalDevice = devices[i];
-					vulkanThings->queues.graphicsQueueIndex = j;
+					vulkanThings->queues.graphicsQueueFamilyIndex = j;
 
 	                vkGetPhysicalDeviceProperties(devices[i], &vulkanThings->vulkan_info->deviceProperties);
                 #if PRINT_INFO_MESSAGES 1
@@ -129,7 +129,7 @@ void vk_createLogicalDevice(St_vulkanThings* vulkanThings)
 {
     VkDeviceQueueCreateInfo queueCreateInfo = {};
 	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfo.queueFamilyIndex = vulkanThings->queues.graphicsQueueIndex;
+	queueCreateInfo.queueFamilyIndex = vulkanThings->queues.graphicsQueueFamilyIndex;
 	queueCreateInfo.queueCount = 1;
 	float queuePriority = 1.0f;
 	queueCreateInfo.pQueuePriorities = &queuePriority;
@@ -175,7 +175,7 @@ void vk_createLogicalDevice(St_vulkanThings* vulkanThings)
 
 	CHECK_RESULT_VK(vkCreateDevice(vulkanThings->physicalDevice, &deviceCreateInfo, NULL, &vulkanThings->logicalDevice))
 
-	vkGetDeviceQueue(vulkanThings->logicalDevice, vulkanThings->queues.graphicsQueueIndex, 0, &vulkanThings->queues.graphicsQueue);
+	vkGetDeviceQueue(vulkanThings->logicalDevice, vulkanThings->queues.graphicsQueueFamilyIndex, 0, &vulkanThings->queues.graphicsQueue);
 
     free(enabledExtensions);
 }
@@ -212,4 +212,54 @@ void vk_createRenderPass(St_vulkanThings* vulkanThings){
 	renderPassInfo.pSubpasses = (VkSubpassDescription[]){ subpass };
 
 	CHECK_RESULT_VK(vkCreateRenderPass(vulkanThings->logicalDevice, &renderPassInfo, NULL, &vulkanThings->renderPass))
+}
+
+VkCommandPoolCreateInfo fillCommandPoolCreateInfo(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags)
+{
+	VkCommandPoolCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	info.pNext = NULL;
+
+	info.queueFamilyIndex = queueFamilyIndex;
+	info.flags = flags;
+	return info;
+}
+
+void vk_createCommands(St_vulkanThings* vulkanThings){
+	VkCommandPoolCreateInfo commandCreateInfo = {};
+	commandCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	commandCreateInfo.queueFamilyIndex = vulkanThings->queues.graphicsQueueFamilyIndex;
+	CHECK_RESULT_VK(vkCreateCommandPool(vulkanThings->logicalDevice, &commandCreateInfo, NULL, &vulkanThings->uploadPool));
+
+	commandCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+	for (int i = 0; i < NUM_FRAMES; i++) {
+		CHECK_RESULT_VK(vkCreateCommandPool(vulkanThings->logicalDevice, &commandCreateInfo, NULL, &vulkanThings->frames[i].commandPool));
+
+		VkCommandBufferAllocateInfo cmdAllocInfo = {};
+		cmdAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		cmdAllocInfo.commandPool = vulkanThings->frames[i].commandPool;
+		cmdAllocInfo.commandBufferCount = 1;
+		cmdAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+		CHECK_RESULT_VK(vkAllocateCommandBuffers(vulkanThings->logicalDevice, &cmdAllocInfo, &vulkanThings->frames[i].commandBuffer));
+	}
+}
+
+void vk_createSyncThings(St_vulkanThings* vulkanThings){
+	VkFenceCreateInfo fenceCreateInfo = {};
+	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+	VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	for (int i = 0; i < NUM_FRAMES; i++) {
+		CHECK_RESULT_VK(vkCreateFence(vulkanThings->logicalDevice, &fenceCreateInfo, NULL, &vulkanThings->frames[i].renderFence));
+
+		CHECK_RESULT_VK(vkCreateSemaphore(vulkanThings->logicalDevice, &semaphoreCreateInfo, NULL, &vulkanThings->frames[i].presentSemaphore));
+		CHECK_RESULT_VK(vkCreateSemaphore(vulkanThings->logicalDevice, &semaphoreCreateInfo, NULL, &vulkanThings->frames[i].renderSemaphore));
+	}
+
+	CHECK_RESULT_VK(vkCreateFence(vulkanThings->logicalDevice, &fenceCreateInfo, NULL, &vulkanThings->uploadFence));
 }

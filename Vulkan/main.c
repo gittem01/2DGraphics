@@ -37,6 +37,8 @@ int main()
     vk_createSwapChain(vulkanThings, window);
     vk_createRenderPass(vulkanThings);
     vk_createFrameBuffers(vulkanThings);
+    vk_createCommands(vulkanThings);
+    vk_createSyncThings(vulkanThings);
 
     while (!glfwWindowShouldClose(window))
     {
