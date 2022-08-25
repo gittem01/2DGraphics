@@ -105,13 +105,14 @@ void vk_createSwapChain(vulkanThings* vk_things, GLFWwindow* window)
 
     CHECK_RESULT_VK(vkCreateSwapchainKHR(vk_things->logicalDevice, &swapChainCreateInfo, NULL, &vk_things->swapChainData->swapChain))
 
-    int swapChainImageCount;
-    vkGetSwapchainImagesKHR(vk_things->logicalDevice, vk_things->swapChainData->swapChain, (uint32_t*)&swapChainImageCount, NULL);
-    vk_things->swapChainData->images = malloc(sizeof(VkImage) * swapChainImageCount);
-    vk_things->swapChainData->imageViews = malloc(sizeof(VkImageView) * swapChainImageCount);
-    vkGetSwapchainImagesKHR(vk_things->logicalDevice, vk_things->swapChainData->swapChain, (uint32_t*)&swapChainImageCount, vk_things->swapChainData->images);
+    vkGetSwapchainImagesKHR(vk_things->logicalDevice, vk_things->swapChainData->swapChain,
+        (uint32_t*)&vk_things->swapChainData->imageCount, NULL);
+    vk_things->swapChainData->images = malloc(sizeof(VkImage) * vk_things->swapChainData->imageCount);
+    vk_things->swapChainData->imageViews = malloc(sizeof(VkImageView) * vk_things->swapChainData->imageCount);
+    vkGetSwapchainImagesKHR(vk_things->logicalDevice, vk_things->swapChainData->swapChain,
+        (uint32_t*)&vk_things->swapChainData->imageCount, vk_things->swapChainData->images);
 
-    for (i = 0; i < swapChainImageCount; i++) {
+    for (i = 0; i < vk_things->swapChainData->imageCount; i++) {
         VkImageViewCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         createInfo.image = vk_things->swapChainData->images[i];
@@ -129,4 +130,25 @@ void vk_createSwapChain(vulkanThings* vk_things, GLFWwindow* window)
 
         CHECK_RESULT_VK(vkCreateImageView(vk_things->logicalDevice, &createInfo, NULL, &vk_things->swapChainData->imageViews[i]))
     }
+}
+
+void vk_createFrameBuffers(vulkanThings* vulkan_things){
+    VkFramebufferCreateInfo frameBufferInfo = {};
+	frameBufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+
+	frameBufferInfo.renderPass = vulkan_things->renderPass;
+	frameBufferInfo.width = vulkan_things->swapChainData->extent.width;
+	frameBufferInfo.height = vulkan_things->swapChainData->extent.height;
+	frameBufferInfo.layers = 1;
+
+	vulkan_things->swapChainData->frameBuffers = malloc(sizeof(VkFramebuffer) * vulkan_things->swapChainData->imageCount);
+
+	for (int i = 0; i < vulkan_things->swapChainData->imageCount; i++) {
+        VkImageView attachments[] = { vulkan_things->swapChainData->imageViews[i] };
+        
+		frameBufferInfo.attachmentCount = sizeof(attachments) / sizeof(VkImageView);
+		frameBufferInfo.pAttachments = attachments;
+
+		vkCreateFramebuffer(vulkan_things->logicalDevice, &frameBufferInfo, NULL, vulkan_things->swapChainData->frameBuffers + i);
+	}
 }

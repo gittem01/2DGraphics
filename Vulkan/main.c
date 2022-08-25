@@ -35,6 +35,8 @@ int main()
     vk_selectPhysicalDevice(vk_things);
     vk_createLogicalDevice(vk_things);
     vk_createSwapChain(vk_things, window);
+    vk_createRenderPass(vk_things);
+    vk_createFrameBuffers(vk_things);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -42,5 +44,6 @@ int main()
     }
 
     glfwTerminate();
+    
     return 0;
 }

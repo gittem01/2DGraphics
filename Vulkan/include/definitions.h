@@ -23,8 +23,11 @@ typedef struct
     VkSwapchainKHR swapChain;
     VkSurfaceFormatKHR surfaceFormat;
     VkExtent2D extent;
+    
     VkImage* images;
     VkImageView* imageViews;
+    VkFramebuffer* frameBuffers;
+    int imageCount;
 } swapChainData;
 
 typedef struct
@@ -36,6 +39,7 @@ typedef struct
     VkDevice logicalDevice;
     queueData queues;
     swapChainData* swapChainData;
+    VkRenderPass renderPass;
 
 } vulkanThings;
 
