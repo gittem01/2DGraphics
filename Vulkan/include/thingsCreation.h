@@ -6,12 +6,12 @@
 #include <GLFW/glfw3.h>
 #include <string.h>
 
-void vk_createSwapChain(vulkanThings* vk_things, GLFWwindow* window);
+void vk_createSwapChain(St_vulkanThings* vulkanThings, GLFWwindow* window);
 
-void vk_createInstance(vulkanThings* vulkan_things);
-void vk_selectPhysicalDevice(vulkanThings* vulkan_things);
-void vk_createLogicalDevice(vulkanThings* vulkan_things);
-void vk_createRenderPass(vulkanThings* vulkan_things);
-void vk_createFrameBuffers(vulkanThings* vulkan_things);
+void vk_createInstance(St_vulkanThings* vulkanThings);
+void vk_selectPhysicalDevice(St_vulkanThings* vulkanThings);
+void vk_createLogicalDevice(St_vulkanThings* vulkanThings);
+void vk_createRenderPass(St_vulkanThings* vulkanThings);
+void vk_createFrameBuffers(St_vulkanThings* vulkanThings);
 
 #endif // THINGS_CREATION_H

@@ -1,16 +1,16 @@
 #include <thingsCreation.h>
 
-vulkanThings* getVulkanThings(){
-    vulkanThings * vk_things = malloc(sizeof(vulkanThings));
-    vk_things->vulkan_info = malloc(sizeof(vulkanInfo));
-    vk_things->swapChainData = malloc(sizeof(swapChainData));
+St_vulkanThings* getVulkanThings(){
+    St_vulkanThings * vulkanThings = malloc(sizeof(St_vulkanThings));
+    vulkanThings->vulkan_info = malloc(sizeof(St_vulkanInfo));
+    vulkanThings->swapChainData = malloc(sizeof(St_swapChainData));
 
-    return vk_things;
+    return vulkanThings;
 }
 
 int main()
 {
-    vulkanThings* vk_things = getVulkanThings();
+    St_vulkanThings* vulkanThings = getVulkanThings();
 
     GLFWwindow* window;
 
@@ -28,15 +28,15 @@ int main()
         exit(1);
     }
 
-    vk_createInstance(vk_things);
+    vk_createInstance(vulkanThings);
 
-    CHECK_RESULT_VK(glfwCreateWindowSurface(vk_things->instance, window, NULL, &vk_things->surface))
+    CHECK_RESULT_VK(glfwCreateWindowSurface(vulkanThings->instance, window, NULL, &vulkanThings->surface))
 
-    vk_selectPhysicalDevice(vk_things);
-    vk_createLogicalDevice(vk_things);
-    vk_createSwapChain(vk_things, window);
-    vk_createRenderPass(vk_things);
-    vk_createFrameBuffers(vk_things);
+    vk_selectPhysicalDevice(vulkanThings);
+    vk_createLogicalDevice(vulkanThings);
+    vk_createSwapChain(vulkanThings, window);
+    vk_createRenderPass(vulkanThings);
+    vk_createFrameBuffers(vulkanThings);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -44,6 +44,6 @@ int main()
     }
 
     glfwTerminate();
-    
+
     return 0;
 }

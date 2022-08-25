@@ -11,12 +11,12 @@ typedef struct
 {
     VkQueue graphicsQueue;
     uint32_t graphicsQueueIndex;
-} queueData;
+} St_queueData;
 
 typedef struct
 {
     VkPhysicalDeviceProperties deviceProperties;
-} vulkanInfo;
+} St_vulkanInfo;
 
 typedef struct
 {
@@ -28,20 +28,20 @@ typedef struct
     VkImageView* imageViews;
     VkFramebuffer* frameBuffers;
     int imageCount;
-} swapChainData;
+} St_swapChainData;
 
 typedef struct
 {
-    vulkanInfo* vulkan_info;
+    St_vulkanInfo* vulkan_info;
     VkInstance instance;
     VkSurfaceKHR surface;
     VkPhysicalDevice physicalDevice;
     VkDevice logicalDevice;
-    queueData queues;
-    swapChainData* swapChainData;
+    St_queueData queues;
+    St_swapChainData* swapChainData;
     VkRenderPass renderPass;
 
-} vulkanThings;
+} St_vulkanThings;
 
 static VkResult ERROR_VALUES[]
 =

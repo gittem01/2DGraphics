@@ -6,7 +6,7 @@ const char* ENABLE_EXTENSIONS[] = {
 
 const int NUM_ENABLE_EXTENSIONS = sizeof(ENABLE_EXTENSIONS) / sizeof(ENABLE_EXTENSIONS[0]);
 
-void vk_createInstance(vulkanThings* vulkan_things)
+void vk_createInstance(St_vulkanThings* vulkanThings)
 {
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -40,7 +40,7 @@ void vk_createInstance(vulkanThings* vulkan_things)
     instanceInfo.enabledExtensionCount = extensionCount;
     instanceInfo.ppEnabledExtensionNames = requiredExtensions;
 
-    CHECK_RESULT_VK(vkCreateInstance(&instanceInfo, NULL, &vulkan_things->instance))
+    CHECK_RESULT_VK(vkCreateInstance(&instanceInfo, NULL, &vulkanThings->instance))
 
     free(requiredExtensions);
 }
@@ -76,19 +76,19 @@ static int isDeviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR surfac
 	return presentModeCount != 0 && formatCount != 0;
 }
 
-void vk_selectPhysicalDevice(vulkanThings* vulkan_things)
+void vk_selectPhysicalDevice(St_vulkanThings* vulkanThings)
 {
     uint32_t deviceCount = 0;
-	vkEnumeratePhysicalDevices(vulkan_things->instance, &deviceCount, NULL);
+	vkEnumeratePhysicalDevices(vulkanThings->instance, &deviceCount, NULL);
 	if (deviceCount == 0) {
 		printf("failed to find GPUs with Vulkan support!");
         exit(1);
 	}
 	VkPhysicalDevice* devices = malloc(sizeof(VkPhysicalDevice) * deviceCount);
 
-	vkEnumeratePhysicalDevices(vulkan_things->instance, &deviceCount, devices);
+	vkEnumeratePhysicalDevices(vulkanThings->instance, &deviceCount, devices);
 
-	vulkan_things->physicalDevice = VK_NULL_HANDLE;
+	vulkanThings->physicalDevice = VK_NULL_HANDLE;
 
 	for (uint32_t i = 0; i < deviceCount; i++) {
 		VkPhysicalDeviceProperties deviceProperties;
@@ -98,17 +98,17 @@ void vk_selectPhysicalDevice(vulkanThings* vulkan_things)
 		VkQueueFamilyProperties* queueFamilies = malloc(sizeof(VkQueueFamilyProperties) * queueFamilyCount);
 		vkGetPhysicalDeviceQueueFamilyProperties(devices[i], &queueFamilyCount, queueFamilies);
 
-		if (isDeviceSuitable(devices[i], vulkan_things->surface)) {
+		if (isDeviceSuitable(devices[i], vulkanThings->surface)) {
 			for (uint32_t j = 0; j < queueFamilyCount; j++) {
 				VkBool32 presentSupported;
-				vkGetPhysicalDeviceSurfaceSupportKHR(devices[i], j, vulkan_things->surface, &presentSupported);
+				vkGetPhysicalDeviceSurfaceSupportKHR(devices[i], j, vulkanThings->surface, &presentSupported);
 				if (queueFamilies[j].queueFlags & VK_QUEUE_GRAPHICS_BIT && presentSupported) {
-					vulkan_things->physicalDevice = devices[i];
-					vulkan_things->queues.graphicsQueueIndex = j;
+					vulkanThings->physicalDevice = devices[i];
+					vulkanThings->queues.graphicsQueueIndex = j;
 
-	                vkGetPhysicalDeviceProperties(devices[i], &vulkan_things->vulkan_info->deviceProperties);
+	                vkGetPhysicalDeviceProperties(devices[i], &vulkanThings->vulkan_info->deviceProperties);
                 #if PRINT_INFO_MESSAGES 1
-                    printf("Selected GPU : %s\n", vulkan_things->vulkan_info->deviceProperties.deviceName);
+                    printf("Selected GPU : %s\n", vulkanThings->vulkan_info->deviceProperties.deviceName);
                 #endif
 
 					break;
@@ -119,28 +119,28 @@ void vk_selectPhysicalDevice(vulkanThings* vulkan_things)
 	}
 	free(devices);
 
-	if (vulkan_things->physicalDevice == VK_NULL_HANDLE) {
+	if (vulkanThings->physicalDevice == VK_NULL_HANDLE) {
 		printf("failed to find a suitable GPU!");
        exit(1);
 	}
 }
 
-void vk_createLogicalDevice(vulkanThings* vulkan_things)
+void vk_createLogicalDevice(St_vulkanThings* vulkanThings)
 {
     VkDeviceQueueCreateInfo queueCreateInfo = {};
 	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfo.queueFamilyIndex = vulkan_things->queues.graphicsQueueIndex;
+	queueCreateInfo.queueFamilyIndex = vulkanThings->queues.graphicsQueueIndex;
 	queueCreateInfo.queueCount = 1;
 	float queuePriority = 1.0f;
 	queueCreateInfo.pQueuePriorities = &queuePriority;
 
 	VkPhysicalDeviceFeatures deviceFeatures = {};
-	vkGetPhysicalDeviceFeatures(vulkan_things->physicalDevice, &deviceFeatures);
+	vkGetPhysicalDeviceFeatures(vulkanThings->physicalDevice, &deviceFeatures);
 
 	uint32_t extensionPropertyCount;
-	vkEnumerateDeviceExtensionProperties(vulkan_things->physicalDevice, NULL, &extensionPropertyCount, NULL);
+	vkEnumerateDeviceExtensionProperties(vulkanThings->physicalDevice, NULL, &extensionPropertyCount, NULL);
 	VkExtensionProperties* extensionProperties = (VkExtensionProperties*)malloc(sizeof(VkExtensionProperties) * extensionPropertyCount);
-	vkEnumerateDeviceExtensionProperties(vulkan_things->physicalDevice, NULL, &extensionPropertyCount, extensionProperties);
+	vkEnumerateDeviceExtensionProperties(vulkanThings->physicalDevice, NULL, &extensionPropertyCount, extensionProperties);
 	
     int found = 0;
     for (uint32_t i = 0; i < extensionPropertyCount; i++) {
@@ -173,16 +173,16 @@ void vk_createLogicalDevice(vulkanThings* vulkan_things)
 	deviceCreateInfo.enabledExtensionCount = extensionCount;
 	deviceCreateInfo.ppEnabledExtensionNames = enabledExtensions;
 
-	CHECK_RESULT_VK(vkCreateDevice(vulkan_things->physicalDevice, &deviceCreateInfo, NULL, &vulkan_things->logicalDevice))
+	CHECK_RESULT_VK(vkCreateDevice(vulkanThings->physicalDevice, &deviceCreateInfo, NULL, &vulkanThings->logicalDevice))
 
-	vkGetDeviceQueue(vulkan_things->logicalDevice, vulkan_things->queues.graphicsQueueIndex, 0, &vulkan_things->queues.graphicsQueue);
+	vkGetDeviceQueue(vulkanThings->logicalDevice, vulkanThings->queues.graphicsQueueIndex, 0, &vulkanThings->queues.graphicsQueue);
 
     free(enabledExtensions);
 }
 
-void vk_createRenderPass(vulkanThings* vulkan_things){
+void vk_createRenderPass(St_vulkanThings* vulkanThings){
 	VkAttachmentDescription colorAttachment = {};
-	colorAttachment.format = vulkan_things->swapChainData->surfaceFormat.format;
+	colorAttachment.format = vulkanThings->swapChainData->surfaceFormat.format;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -211,5 +211,5 @@ void vk_createRenderPass(vulkanThings* vulkan_things){
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = (VkSubpassDescription[]){ subpass };
 
-	CHECK_RESULT_VK(vkCreateRenderPass(vulkan_things->logicalDevice, &renderPassInfo, NULL, &vulkan_things->renderPass))
+	CHECK_RESULT_VK(vkCreateRenderPass(vulkanThings->logicalDevice, &renderPassInfo, NULL, &vulkanThings->renderPass))
 }
