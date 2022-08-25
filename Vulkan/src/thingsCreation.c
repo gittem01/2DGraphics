@@ -261,5 +261,6 @@ void vk_createSyncThings(St_vulkanThings* vulkanThings){
 		CHECK_RESULT_VK(vkCreateSemaphore(vulkanThings->logicalDevice, &semaphoreCreateInfo, NULL, &vulkanThings->frames[i].renderSemaphore));
 	}
 
+	fenceCreateInfo.flags = 0;
 	CHECK_RESULT_VK(vkCreateFence(vulkanThings->logicalDevice, &fenceCreateInfo, NULL, &vulkanThings->uploadFence));
 }
