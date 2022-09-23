@@ -7,10 +7,12 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/GLFW)
 add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/freetype)
+add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/cglm)
 
 include_directories(${CMAKE_SOURCE_DIR}/third_party/GLM/include)
 include_directories(${CMAKE_SOURCE_DIR}/third_party/GLFW/include)
 include_directories(${CMAKE_SOURCE_DIR}/third_party/GLAD/include)
+include_directories(${CMAKE_SOURCE_DIR}/third_party/cglm/include)
 include_directories(${CMAKE_SOURCE_DIR}/third_party/freetype/include)
 include_directories(${CMAKE_SOURCE_DIR}/third_party/json)
 include_directories(${CMAKE_SOURCE_DIR}/third_party/vulkan/include)

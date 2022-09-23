@@ -8,16 +8,16 @@ link_directories(${CMAKE_SOURCE_DIR}/third_party/vulkan/lib)
 
 include_directories(include)
 
-add_executable(VkGraphics2D main.c)
+add_executable(VkGraphics2D main.cpp)
 
-file(GLOB sourceFiles src/*.c*)
+file(GLOB sourceFiles src/*.cpp)
 file(GLOB headerFiles include/*.h)
 
 message(${sourceFiles})
 
 add_library(vkMines ${headerFiles} ${sourceFiles})
 
-target_link_libraries(VkGraphics2D vkMines glfw m)
+target_link_libraries(VkGraphics2D vkMines glfw cglm)
 
 if (APPLE)
 	target_link_libraries(VkGraphics2D vulkan)

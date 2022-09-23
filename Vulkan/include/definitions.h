@@ -1,60 +1,7 @@
-#ifndef DEFINITIONS_H
-#define DEFINITIONS_H
+#pragma once
 
 #include <vulkan/vulkan.h>
 #include <stdio.h>
-#include <math.h>
-
-#define PRINT_INFO_MESSAGES
-
-#define NUM_FRAMES 2
-
-typedef struct{
-    VkCommandPool commandPool;
-	VkCommandBuffer commandBuffer;
-    VkFence renderFence;
-    VkSemaphore presentSemaphore;
-    VkSemaphore renderSemaphore;
-} St_frameData;
-
-typedef struct
-{
-    VkQueue graphicsQueue;
-    uint32_t graphicsQueueFamilyIndex;
-} St_queueData;
-
-typedef struct
-{
-    VkPhysicalDeviceProperties deviceProperties;
-} St_vulkanInfo;
-
-typedef struct
-{
-    VkSwapchainKHR swapChain;
-    VkSurfaceFormatKHR surfaceFormat;
-    VkExtent2D extent;
-    
-    VkImage* images;
-    VkImageView* imageViews;
-    VkFramebuffer* frameBuffers;
-    int imageCount;
-} St_swapChainData;
-
-typedef struct
-{
-    St_vulkanInfo* vulkan_info;
-    VkInstance instance;
-    VkSurfaceKHR surface;
-    VkPhysicalDevice physicalDevice;
-    VkDevice logicalDevice;
-    St_queueData queues;
-    St_swapChainData* swapChainData;
-    VkRenderPass renderPass;
-    VkCommandPool uploadPool;
-    VkFence uploadFence;
-    St_frameData frames[NUM_FRAMES];
-
-} St_vulkanThings;
 
 static VkResult ERROR_VALUES[]
 =
@@ -198,5 +145,3 @@ static void printVkError(VkResult error)
         exit(1);                    \
     }                               \
 }
-
-#endif // DEFINITIONS_H
