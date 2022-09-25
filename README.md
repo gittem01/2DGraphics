@@ -1,2 +1,2 @@
 # 2DGraphics
-OpenGL 2D stuff
+2D GL things
