@@ -4,6 +4,9 @@
 #include <string.h>
 #include <cglm/cglm.h>
 #include <vulkan/vulkan.h>
+#include <glm/glm.hpp>
+#include <glm/gtx/transform.hpp>
+#include <vector>
 
 #define NUM_FRAMES 2
 #define PRINT_INFO_MESSAGES
@@ -39,7 +42,46 @@ typedef struct
 typedef struct
 {
     VkPhysicalDeviceProperties deviceProperties;
+    VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
 } s_vulkanInfo;
+
+typedef struct
+{
+    VkDeviceMemory memory;
+    VkBuffer buffer;
+} s_vertices;
+
+typedef struct
+{
+    VkDeviceMemory memory;
+    VkBuffer buffer;
+    uint32_t count;
+} s_indices;
+
+typedef struct
+{
+    VkDeviceMemory memory;
+    VkBuffer buffer;
+    VkDescriptorBufferInfo descriptor;
+} s_uniformBufferVS;
+
+typedef struct
+{
+    VkDeviceMemory memory;
+    VkBuffer buffer;
+} s_stagingBuffer;
+
+typedef struct
+{
+    s_stagingBuffer vertices;
+    s_stagingBuffer indices;
+} s_stagingBuffers;
+
+typedef struct {
+    glm::mat4 orthoMatrix;
+    glm::mat4 modelMatrix;
+    glm::mat4 viewMatrix;
+} s_uboVS;
 
 class SwapChain;
 
@@ -49,7 +91,11 @@ public:
 
     ThinDrawer();
 
-    s_vulkanInfo* vulkan_info;
+    uint32_t dpiScaling = 1;
+    uint32_t frameNumber = 0;
+    uint32_t lastSwapChainImageIndex;
+
+    s_vulkanInfo* vulkanInfo;
     VkInstance instance;
     VkPhysicalDevice physicalDevice;
     VkDevice logicalDevice;
@@ -59,7 +105,19 @@ public:
     VkCommandPool uploadPool;
     VkFence uploadFence;
     GLFWwindow* window;
+    uint32_t width, height;
     s_frameData frames[NUM_FRAMES];
+    std::vector<VkCommandBuffer> drawCommandBuffers;
+
+    VkDescriptorSetLayout descriptorSetLayout;
+    VkPipelineLayout pipelineLayout;
+    VkPipeline pipeline;
+    VkDescriptorPool descriptorPool;
+    VkDescriptorSet descriptorSet;
+
+    s_vertices vertices;
+    s_indices indices;
+    s_uniformBufferVS uniformBufferVS;
 
     void initBase();
 
@@ -69,7 +127,19 @@ public:
     void createRenderPass();
     void createLogicalDevice();
     void selectPhysicalDevice();
+    void prepareVertices();
+    void prepareUniformBuffers();
+    void setupDescriptorSetLayout();
+    void preparePipelines();
+    void setupDescriptorPool();
+    void setupDescriptorSet();
+    void buildCommandBuffers();
+
+    void renderLoop();
+
+    VkCommandBuffer getCommandBuffer(bool begin);
+    void flushCommandBuffer(VkCommandBuffer commandBuffer);
+    uint32_t getMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties);
 
     static bool isDeviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
-    static VkCommandPoolCreateInfo fillCommandPoolCreateInfo(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags);
 };

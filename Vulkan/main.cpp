@@ -7,6 +7,7 @@ int main()
     while (!glfwWindowShouldClose(thinDrawer->window))
     {
         glfwPollEvents();
+        thinDrawer->renderLoop();
     }
 
     glfwTerminate();

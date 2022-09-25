@@ -8,7 +8,7 @@ link_directories(${CMAKE_SOURCE_DIR}/third_party/vulkan/lib)
 
 include_directories(include)
 
-add_executable(VkGraphics2D main.cpp)
+add_executable(VkGraphics2D main.cpp src/Shader.cpp include/Shader.h)
 
 file(GLOB sourceFiles src/*.cpp)
 file(GLOB headerFiles include/*.h)

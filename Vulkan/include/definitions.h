@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan.h>
 #include <stdio.h>
+#include <assert.h>
 
 static VkResult ERROR_VALUES[]
 =
@@ -142,6 +143,7 @@ static void printVkError(VkResult error)
     if ((result) != VK_SUCCESS)     \
     {                               \
         printVkError(result);       \
+        assert(false);              \
         exit(1);                    \
     }                               \
 }

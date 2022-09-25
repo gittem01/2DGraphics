@@ -92,7 +92,7 @@ void SwapChain::createSwapChain(GLFWwindow* window)
         extent = extent;
     }
 
-    int imageCount = (int)surfaceCapabilities.minImageCount + 1;
+    imageCount = (int)surfaceCapabilities.minImageCount + 1;
     if (surfaceCapabilities.maxImageCount > 0 && imageCount > surfaceCapabilities.maxImageCount)
     {
         imageCount = (int)surfaceCapabilities.maxImageCount;
