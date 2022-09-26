@@ -27,6 +27,9 @@ public:
 
     VkImage* images;
     VkImageView* imageViews;
+    VkImage colorImage;
+    VkImageView colorImageView;
+    VkDeviceMemory colorImageMemory;
     VkFramebuffer* frameBuffers;
     int imageCount;
 
@@ -35,4 +38,5 @@ public:
     void querySwapChainSupport();
     void createSwapChain(GLFWwindow* window);
     void createFrameBuffers();
+    void createColorResources();
 };

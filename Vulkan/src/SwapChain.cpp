@@ -84,12 +84,8 @@ void SwapChain::createSwapChain(GLFWwindow* window)
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
 
-        VkExtent2D extent;
-
         extent.width = MIN(MAX(width, surfaceCapabilities.minImageExtent.width), surfaceCapabilities.maxImageExtent.width);
         extent.height = MIN(MAX(height, surfaceCapabilities.minImageExtent.height), surfaceCapabilities.maxImageExtent.height);
-
-        extent = extent;
     }
 
     imageCount = (int)surfaceCapabilities.minImageCount + 1;
@@ -146,6 +142,11 @@ void SwapChain::createSwapChain(GLFWwindow* window)
 
         CHECK_RESULT_VK(vkCreateImageView(thinDrawer->logicalDevice, &createInfo, NULL, &imageViews[i]))
     }
+
+    if (thinDrawer->samples > VK_SAMPLE_COUNT_1_BIT)
+    {
+        createColorResources();
+    }
 }
 
 void SwapChain::createFrameBuffers()
@@ -162,11 +163,53 @@ void SwapChain::createFrameBuffers()
 
 	for (int i = 0; i < imageCount; i++)
     {
-        VkImageView attachments[] = { imageViews[i] };
-        
-		frameBufferInfo.attachmentCount = sizeof(attachments) / sizeof(VkImageView);
-		frameBufferInfo.pAttachments = attachments;
+        std::vector<VkImageView> attachments;
 
-		vkCreateFramebuffer(thinDrawer->logicalDevice, &frameBufferInfo, NULL, frameBuffers + i);
+        if (thinDrawer->samples > VK_SAMPLE_COUNT_1_BIT)
+        {
+            attachments.push_back(colorImageView);
+        }
+
+        attachments.push_back(imageViews[i]);
+
+		frameBufferInfo.attachmentCount = attachments.size();
+		frameBufferInfo.pAttachments = attachments.data();
+
+        CHECK_RESULT_VK(vkCreateFramebuffer(thinDrawer->logicalDevice, &frameBufferInfo, NULL, frameBuffers + i))
 	}
+}
+
+void SwapChain::createColorResources()
+{
+    VkExtent3D colorImageExtent =
+    {
+            thinDrawer->width,
+            thinDrawer->height,
+            1
+    };
+
+    VkImageCreateInfo colorImageInfo;
+    colorImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    colorImageInfo.extent = colorImageExtent;
+    colorImageInfo.format = surfaceFormat.format;
+    colorImageInfo.flags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    colorImageInfo.samples = thinDrawer->samples;
+
+    thinDrawer->createImage(thinDrawer->width, thinDrawer->height, 1, thinDrawer->samples, surfaceFormat.format,
+                VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage, colorImageMemory);
+
+    VkImageViewCreateInfo imageViewCreateInfo = { };
+    imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    imageViewCreateInfo.format = surfaceFormat.format;
+    imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+    imageViewCreateInfo.subresourceRange.levelCount = 1;
+    imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+    imageViewCreateInfo.subresourceRange.layerCount = 1;
+    imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    imageViewCreateInfo.image = colorImage;
+
+
+    CHECK_RESULT_VK(vkCreateImageView(thinDrawer->logicalDevice, &imageViewCreateInfo, NULL, &colorImageView))
 }

@@ -47,6 +47,8 @@ void ThinDrawer::initBase()
     selectPhysicalDevice();
     createLogicalDevice();
 
+    setSamples();
+
     swapChain->createSwapChain(window);
 
     createRenderPass();
@@ -203,29 +205,64 @@ void ThinDrawer::createSyncThings()
 
 void ThinDrawer::createRenderPass()
 {
-    std::array<VkAttachmentDescription, 1> attachments = { };
+    std::vector<VkAttachmentDescription> attachments;
 
-    attachments[0].format = swapChain->surfaceFormat.format;
-    attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
-    attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    VkAttachmentDescription colorAttachment = { };
+
+    colorAttachment.format = swapChain->surfaceFormat.format;
+    colorAttachment.samples = samples;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    if (samples > VK_SAMPLE_COUNT_1_BIT)
+    {
+        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    }
+    else
+    {
+        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    }
+
+    attachments.push_back(colorAttachment);
 
     VkAttachmentReference colorReference = { };
     colorReference.attachment = 0;
     colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+    if (samples > VK_SAMPLE_COUNT_1_BIT)
+    {
+        VkAttachmentDescription colorAttachmentResolve = { };
+
+        colorAttachmentResolve.format = swapChain->surfaceFormat.format;
+        colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+        colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+        attachments.push_back(colorAttachmentResolve);
+    }
+
+    VkAttachmentReference color_attachment_resolve_ref = { };
+    color_attachment_resolve_ref.attachment = 1;
+    color_attachment_resolve_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
     VkSubpassDescription subpassDescription = { };
     subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpassDescription.colorAttachmentCount = 1;
     subpassDescription.pColorAttachments = &colorReference;
+    if (samples > VK_SAMPLE_COUNT_1_BIT)
+    {
+        subpassDescription.pResolveAttachments = &color_attachment_resolve_ref;
+    }
 
     VkRenderPassCreateInfo renderPassInfo = { };
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+    renderPassInfo.attachmentCount = attachments.size();
     renderPassInfo.pAttachments = attachments.data();
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpassDescription;
@@ -530,7 +567,8 @@ uint32_t ThinDrawer::getMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags
         typeBits >>= 1;
     }
 
-    throw "Could not find a suitable memory type!";
+    printf("Could not find a suitable memory type!");
+    exit(-1);
 }
 
 void ThinDrawer::prepareUniformBuffers()
@@ -618,13 +656,23 @@ void ThinDrawer::preparePipelines()
     rasterizationStateCreateInfo.lineWidth = 1.0f;
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment = { };
-    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    colorBlendAttachment.blendEnable = VK_FALSE;
+    colorBlendAttachment.colorWriteMask = 0xF;
+    colorBlendAttachment.blendEnable = VK_TRUE;
+    colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 
     VkPipelineColorBlendStateCreateInfo colorBlendState = { };
     colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     colorBlendState.attachmentCount = 1;
     colorBlendState.pAttachments = &colorBlendAttachment;
+    colorBlendState.blendConstants[0] = 1.0f;
+    colorBlendState.blendConstants[1] = 1.0f;
+    colorBlendState.blendConstants[2] = 1.0f;
+    colorBlendState.blendConstants[3] = 1.0f;
 
     VkPipelineViewportStateCreateInfo viewportState = { };
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -641,7 +689,7 @@ void ThinDrawer::preparePipelines()
 
     VkPipelineMultisampleStateCreateInfo multisampleState = { };
     multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisampleState.rasterizationSamples = samples;
     multisampleState.pSampleMask = nullptr;
 
     VkVertexInputBindingDescription vertexInputBinding = { };
@@ -774,4 +822,74 @@ void ThinDrawer::buildCommandBuffers()
         vkCmdEndRenderPass(drawCommandBuffers[i]);
         CHECK_RESULT_VK(vkEndCommandBuffer(drawCommandBuffers[i]))
     }
+}
+
+void ThinDrawer::createImage(uint32_t p_width, uint32_t p_height, uint32_t mipLevels,
+                             VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+                             VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
+{
+    VkImageCreateInfo imageInfo = { };
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.extent.width = p_width;
+    imageInfo.extent.height = p_height;
+    imageInfo.extent.depth = 1;
+    imageInfo.mipLevels = mipLevels;
+    imageInfo.arrayLayers = 1;
+    imageInfo.format = format;
+    imageInfo.tiling = tiling;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.usage = usage;
+    imageInfo.samples = numSamples;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    CHECK_RESULT_VK(vkCreateImage(logicalDevice, &imageInfo, nullptr, &image))
+
+    VkMemoryRequirements memRequirements;
+    vkGetImageMemoryRequirements(logicalDevice, image, &memRequirements);
+
+    VkMemoryAllocateInfo allocInfo = { };
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+
+    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &imageMemory))
+
+    CHECK_RESULT_VK(vkBindImageMemory(logicalDevice, image, imageMemory, 0))
+}
+
+uint32_t ThinDrawer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+{
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+    {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+        {
+            return i;
+        }
+    }
+
+    printf("failed to find suitable memory type!");
+    exit(-1);
+}
+
+void ThinDrawer::setSamples()
+{
+
+    VkSampleCountFlags counts = vulkanInfo->deviceProperties.limits.framebufferColorSampleCounts &
+                                vulkanInfo->deviceProperties.limits.framebufferDepthSampleCounts;
+
+    for (uint32_t flags = desiredSamples; flags >= VK_SAMPLE_COUNT_1_BIT; flags >>= 1)
+    {
+        if (flags & counts)
+        {
+            samples = (VkSampleCountFlagBits)flags;
+            break;
+        }
+    }
+
+    uint32_t maxSampleCount = pow(2, (uint32_t)log2(counts));
+    printf("Desired sample count: %d\nApplied sample count: %d\nMax sample count: %d\n\n", desiredSamples, samples, maxSampleCount);
 }

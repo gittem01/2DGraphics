@@ -94,6 +94,8 @@ public:
     uint32_t dpiScaling = 1;
     uint32_t frameNumber = 0;
     uint32_t lastSwapChainImageIndex;
+    VkSampleCountFlagBits samples;
+    VkSampleCountFlagBits desiredSamples = VK_SAMPLE_COUNT_4_BIT;
 
     s_vulkanInfo* vulkanInfo;
     VkInstance instance;
@@ -140,6 +142,12 @@ public:
     VkCommandBuffer getCommandBuffer(bool begin);
     void flushCommandBuffer(VkCommandBuffer commandBuffer);
     uint32_t getMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties);
+    void setSamples();
+
+    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    void createImage(uint32_t width, uint32_t p_height, uint32_t mipLevels,
+                     VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+                     VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 
     static bool isDeviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 };
