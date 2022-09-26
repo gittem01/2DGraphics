@@ -65,6 +65,7 @@ void ThinDrawer::initBase()
     CHECK_RESULT_VK(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, drawCommandBuffers.data()))
 
     createSyncThings();
+
     prepareVertices();
     prepareUniformBuffers();
     setupDescriptorSetLayout();
@@ -421,13 +422,13 @@ void ThinDrawer::selectPhysicalDevice()
 
 void ThinDrawer::prepareVertices()
 {
-    std::vector<glm::vec2> vertexBuffer =
+    std::vector<glm::vec4> vertexBuffer =
             {
-                { +1.0f, +1.0f },
-                { -1.0f, +1.0f },
-                { +0.0f, -1.0f }
+                { +1.0f, +1.0f, +1.0f, +1.0f },
+                { -1.0f, +1.0f, +0.0f, +1.0f },
+                { +0.0f, -1.0f, +0.5f, +0.0f }
             };
-    uint32_t vertexBufferSize = static_cast<uint32_t>(vertexBuffer.size()) * sizeof(glm::vec2);
+    uint32_t vertexBufferSize = static_cast<uint32_t>(vertexBuffer.size()) * sizeof(glm::vec4);
 
     std::vector<uint32_t> indexBuffer = { 0, 1, 2 };
     indices.count = static_cast<uint32_t>(indexBuffer.size());
@@ -694,21 +695,29 @@ void ThinDrawer::preparePipelines()
 
     VkVertexInputBindingDescription vertexInputBinding = { };
     vertexInputBinding.binding = 0;
-    vertexInputBinding.stride = sizeof(glm::vec2);
+    vertexInputBinding.stride = sizeof(glm::vec4);
     vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-    VkVertexInputAttributeDescription vertexInputAttribute;
-    vertexInputAttribute.binding = 0;
-    vertexInputAttribute.location = 0;
-    vertexInputAttribute.format = VK_FORMAT_R32G32_SFLOAT;
-    vertexInputAttribute.offset = 0;
+    VkVertexInputAttributeDescription vertexInputAttributeFor0;
+    vertexInputAttributeFor0.binding = 0;
+    vertexInputAttributeFor0.location = 0;
+    vertexInputAttributeFor0.format = VK_FORMAT_R32G32_SFLOAT;
+    vertexInputAttributeFor0.offset = 0;
+
+    VkVertexInputAttributeDescription vertexInputAttributeFor1;
+    vertexInputAttributeFor1.binding = 0;
+    vertexInputAttributeFor1.location = 1;
+    vertexInputAttributeFor1.format = VK_FORMAT_R32G32_SFLOAT;
+    vertexInputAttributeFor1.offset = 0;
+
+    VkVertexInputAttributeDescription attributes[] = { vertexInputAttributeFor0, vertexInputAttributeFor1 };
 
     VkPipelineVertexInputStateCreateInfo vertexInputState = { };
     vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputState.vertexBindingDescriptionCount = 1;
     vertexInputState.pVertexBindingDescriptions = &vertexInputBinding;
-    vertexInputState.vertexAttributeDescriptionCount = 1;
-    vertexInputState.pVertexAttributeDescriptions = &vertexInputAttribute;
+    vertexInputState.vertexAttributeDescriptionCount = sizeof(attributes) / sizeof(attributes[0]);
+    vertexInputState.pVertexAttributeDescriptions = attributes;
 
     std::vector<std::string> fileNames =	{
             std::string("../assets/shaders/VulkanTriangle/vertex_shader.vert.spv"),
@@ -801,8 +810,8 @@ void ThinDrawer::buildCommandBuffers()
         VkViewport viewport = { };
         viewport.height = (float)height;
         viewport.width = (float)width;
-        viewport.minDepth = (float) 0.0f;
-        viewport.maxDepth = (float) 1.0f;
+        viewport.minDepth = (float)0.0f;
+        viewport.maxDepth = (float)1.0f;
         vkCmdSetViewport(drawCommandBuffers[i], 0, 1, &viewport);
 
         VkRect2D scissor = { };
