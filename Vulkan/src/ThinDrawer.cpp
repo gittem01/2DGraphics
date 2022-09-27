@@ -1,6 +1,9 @@
+#define STB_IMAGE_IMPLEMENTATION
+
 #include <ThinDrawer.h>
 #include <SwapChain.h>
 #include <Shader.h>
+#include <stb_image.h>
 #include <vector>
 #include <array>
 
@@ -72,6 +75,10 @@ void ThinDrawer::initBase()
     preparePipelines();
     setupDescriptorPool();
     setupDescriptorSet();
+
+    loadTexture((char*)"../assets/textures/chain.png", &singleTexture);
+    updateImageDescriptors(&singleTexture);
+
     buildCommandBuffers();
 }
 
@@ -281,8 +288,7 @@ void ThinDrawer::createLogicalDevice()
     float queuePriority = 1.0f;
     queueCreateInfo.pQueuePriorities = &queuePriority;
 
-    VkPhysicalDeviceFeatures deviceFeatures = { };
-    vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
+    vkGetPhysicalDeviceFeatures(physicalDevice, &vulkanInfo->features);
 
     uint32_t extensionPropertyCount;
     vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionPropertyCount, nullptr);
@@ -320,7 +326,7 @@ void ThinDrawer::createLogicalDevice()
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
     deviceCreateInfo.queueCreateInfoCount = 1;
-    deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+    deviceCreateInfo.pEnabledFeatures = &vulkanInfo->features;
     deviceCreateInfo.enabledExtensionCount = extensionCount;
     deviceCreateInfo.ppEnabledExtensionNames = enabledExtensions;
 
@@ -422,15 +428,16 @@ void ThinDrawer::selectPhysicalDevice()
 
 void ThinDrawer::prepareVertices()
 {
-    std::vector<glm::vec4> vertexBuffer =
+    std::vector<s_vertex> vertexBuffer =
             {
-                { +1.0f, +1.0f, +1.0f, +1.0f },
-                { -1.0f, +1.0f, +0.0f, +1.0f },
-                { +0.0f, -1.0f, +0.5f, +0.0f }
+                { {+1.0f, +1.0f}, {+1.0f, +0.0f} },
+                { {-1.0f, +1.0f}, {+0.0f, +0.0f} },
+                { {-1.0f, -1.0f}, {+0.0f, +1.0f} },
+                { {+1.0f, -1.0f}, {+1.0f, +1.0f} },
             };
-    uint32_t vertexBufferSize = static_cast<uint32_t>(vertexBuffer.size()) * sizeof(glm::vec4);
+    uint32_t vertexBufferSize = static_cast<uint32_t>(vertexBuffer.size()) * sizeof(s_vertex);
 
-    std::vector<uint32_t> indexBuffer = { 0, 1, 2 };
+    std::vector<uint32_t> indexBuffer = { 0, 1, 2, 2, 3, 0 };
     indices.count = static_cast<uint32_t>(indexBuffer.size());
     uint32_t indexBufferSize = indices.count * sizeof(uint32_t);
 
@@ -492,7 +499,6 @@ void ThinDrawer::prepareVertices()
     VkCommandBuffer copyCmd = getCommandBuffer(true);
 
     VkBufferCopy copyRegion = { };
-
 
     copyRegion.size = vertexBufferSize;
     vkCmdCopyBuffer(copyCmd, stagingBuffers.vertices.buffer, vertices.buffer, 1, &copyRegion);
@@ -602,6 +608,7 @@ void ThinDrawer::prepareUniformBuffers()
 
     uboVS.orthoMatrix = glm::ortho(-4.0f, +4.0f, -2.25f, +2.25f, -100.0f, 100.0f);
     uboVS.modelMatrix = glm::mat4(1.0f);
+    uboVS.modelMatrix = glm::scale(uboVS.modelMatrix, glm::vec3(2.5f, 1.0f, 1.0f));
 
     uint8_t *pData;
     CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferVS.memory, 0, sizeof(uboVS), 0, (void **)&pData))
@@ -626,13 +633,27 @@ void ThinDrawer::setupDescriptorSetLayout()
 
     CHECK_RESULT_VK(vkCreateDescriptorSetLayout(logicalDevice, &descriptorLayout, nullptr, &descriptorSetLayout))
 
+    VkDescriptorSetLayoutBinding textureBind = { };
+    textureBind.binding = 0;
+    textureBind.descriptorCount = 1;
+    textureBind.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    textureBind.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutCreateInfo setInfo = { };
+    setInfo.bindingCount = 1;
+    setInfo.flags = 0;
+    setInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    setInfo.pBindings = &textureBind;
+    CHECK_RESULT_VK(vkCreateDescriptorSetLayout(logicalDevice, &setInfo, NULL, &textureSetLayout))
+
+    VkDescriptorSetLayout setLayouts[] = { descriptorSetLayout, textureSetLayout };
+
     VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = { };
     pPipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pPipelineLayoutCreateInfo.pNext = nullptr;
-    pPipelineLayoutCreateInfo.setLayoutCount = 1;
-    pPipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
+    pPipelineLayoutCreateInfo.setLayoutCount = sizeof(setLayouts) / sizeof(setLayouts[0]);
+    pPipelineLayoutCreateInfo.pSetLayouts = setLayouts;
 
-    CHECK_RESULT_VK(vkCreatePipelineLayout(logicalDevice, &pPipelineLayoutCreateInfo, nullptr, &pipelineLayout))
+    CHECK_RESULT_VK(vkCreatePipelineLayout(logicalDevice, &pPipelineLayoutCreateInfo, VK_NULL_HANDLE, &pipelineLayout))
 }
 
 void ThinDrawer::preparePipelines()
@@ -695,7 +716,7 @@ void ThinDrawer::preparePipelines()
 
     VkVertexInputBindingDescription vertexInputBinding = { };
     vertexInputBinding.binding = 0;
-    vertexInputBinding.stride = sizeof(glm::vec4);
+    vertexInputBinding.stride = sizeof(s_vertex);
     vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     VkVertexInputAttributeDescription vertexInputAttributeFor0;
@@ -708,7 +729,7 @@ void ThinDrawer::preparePipelines()
     vertexInputAttributeFor1.binding = 0;
     vertexInputAttributeFor1.location = 1;
     vertexInputAttributeFor1.format = VK_FORMAT_R32G32_SFLOAT;
-    vertexInputAttributeFor1.offset = 0;
+    vertexInputAttributeFor1.offset = offsetof(s_vertex, uv);
 
     VkVertexInputAttributeDescription attributes[] = { vertexInputAttributeFor0, vertexInputAttributeFor1 };
 
@@ -743,16 +764,21 @@ void ThinDrawer::preparePipelines()
 
 void ThinDrawer::setupDescriptorPool()
 {
-    VkDescriptorPoolSize typeCounts[1];
-    typeCounts[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    typeCounts[0].descriptorCount = 1;
+    std::vector<VkDescriptorPoolSize> sizes =
+    {
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 10 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 10 },
+            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 },
+    };
 
     VkDescriptorPoolCreateInfo descriptorPoolInfo = { };
     descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     descriptorPoolInfo.pNext = nullptr;
-    descriptorPoolInfo.poolSizeCount = 1;
-    descriptorPoolInfo.pPoolSizes = typeCounts;
-    descriptorPoolInfo.maxSets = 1;
+    descriptorPoolInfo.poolSizeCount = sizes.size();
+    descriptorPoolInfo.pPoolSizes = sizes.data();
+    descriptorPoolInfo.maxSets = 10;
 
     CHECK_RESULT_VK(vkCreateDescriptorPool(logicalDevice, &descriptorPoolInfo, nullptr, &descriptorPool))
 }
@@ -819,10 +845,16 @@ void ThinDrawer::buildCommandBuffers()
         scissor.extent.height = height;
         scissor.offset.x = 0;
         scissor.offset.y = 0;
+
         vkCmdSetScissor(drawCommandBuffers[i], 0, 1, &scissor);
 
-        vkCmdBindDescriptorSets(drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
         vkCmdBindPipeline(drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+        vkCmdBindDescriptorSets(drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                pipelineLayout, 0, 1, &descriptorSet, 0, VK_NULL_HANDLE);
+
+        vkCmdBindDescriptorSets(drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                pipelineLayout, 1, 1, &singleTexture.set, 0, VK_NULL_HANDLE);
 
         VkDeviceSize offsets[1] = { 0 };
         vkCmdBindVertexBuffers(drawCommandBuffers[i], 0, 1, &vertices.buffer, offsets);
@@ -882,6 +914,209 @@ uint32_t ThinDrawer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags p
 
     printf("failed to find suitable memory type!");
     exit(-1);
+}
+
+VkCommandBuffer ThinDrawer::createCommandBuffer(VkCommandBufferLevel level, VkCommandPool pool, bool begin)
+{
+    VkCommandBufferAllocateInfo cmdBufAllocateInfo = { };
+    cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    cmdBufAllocateInfo.commandPool = pool;
+    cmdBufAllocateInfo.level = level;
+    cmdBufAllocateInfo.commandBufferCount = 1;
+
+    VkCommandBuffer cmdBuffer;
+    CHECK_RESULT_VK(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, &cmdBuffer))
+    if (begin)
+    {
+        VkCommandBufferBeginInfo cmdBufInfo = { };
+        cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        CHECK_RESULT_VK(vkBeginCommandBuffer(cmdBuffer, &cmdBufInfo))
+    }
+    return cmdBuffer;
+}
+
+void ThinDrawer::loadTexture(char* fileName, s_texture* texture)
+{
+    int width, height, nChannels;
+    stbi_uc* pixels = stbi_load(fileName, &width, &height, &nChannels, STBI_rgb_alpha);
+
+    if (!pixels) {
+        printf("Failed to load texture file: %s\n", fileName);
+        exit(-1);
+    }
+
+    VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+
+    VkDeviceSize imageSize = width * height * (uint64_t)4;
+
+    texture->width = width;
+    texture->height = height;
+    texture->mipLevels = 1;
+
+    VkMemoryAllocateInfo memAllocInfo = { };
+    memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+
+    VkMemoryRequirements memReqs = { };
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingMemory;
+
+    VkBufferCreateInfo bufferCreateInfo = { };
+    bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+
+    bufferCreateInfo.size = imageSize;
+    bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer))
+
+    vkGetBufferMemoryRequirements(logicalDevice, stagingBuffer, &memReqs);
+    memAllocInfo.allocationSize = memReqs.size;
+    memAllocInfo.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits,
+                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &memAllocInfo, nullptr, &stagingMemory))
+    CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, stagingBuffer, stagingMemory, 0))
+
+    uint8_t *data;
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, stagingMemory, 0, memReqs.size, 0, (void **)&data))
+    memcpy(data, pixels, imageSize);
+    vkUnmapMemory(logicalDevice, stagingMemory);
+
+    VkExtent3D imageExtent;
+    imageExtent.width = static_cast<uint32_t>(width);
+    imageExtent.height = static_cast<uint32_t>(height);
+    imageExtent.depth = 1;
+
+    VkBufferImageCopy copyRegion = { };
+    copyRegion.bufferOffset = 0;
+    copyRegion.bufferRowLength = 0;
+    copyRegion.bufferImageHeight = 0;
+
+    copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copyRegion.imageSubresource.mipLevel = 0;
+    copyRegion.imageSubresource.baseArrayLayer = 0;
+    copyRegion.imageSubresource.layerCount = 1;
+    copyRegion.imageExtent = imageExtent;
+
+    VkImageCreateInfo imageCreateInfo = { };
+    imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.format = format;
+    imageCreateInfo.mipLevels = texture->mipLevels;
+    imageCreateInfo.arrayLayers = 1;
+    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageCreateInfo.extent = { texture->width, texture->height, 1 };
+    imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    CHECK_RESULT_VK(vkCreateImage(logicalDevice, &imageCreateInfo, nullptr, &texture->image))
+
+    vkGetImageMemoryRequirements(logicalDevice, texture->image, &memReqs);
+    memAllocInfo.allocationSize = memReqs.size;
+    memAllocInfo.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &memAllocInfo, nullptr, &texture->deviceMemory))
+    CHECK_RESULT_VK(vkBindImageMemory(logicalDevice, texture->image, texture->deviceMemory, 0))
+
+    VkCommandBuffer copyCmd = createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, uploadPool, true);
+
+    VkImageSubresourceRange subresourceRange = { };
+    subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    subresourceRange.baseMipLevel = 0;
+    subresourceRange.levelCount = texture->mipLevels;
+    subresourceRange.layerCount = 1;
+
+    VkImageMemoryBarrier imageMemoryBarrier = { };
+    imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    imageMemoryBarrier.image = texture->image;
+    imageMemoryBarrier.subresourceRange = subresourceRange;
+    imageMemoryBarrier.srcAccessMask = 0;
+    imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+    vkCmdPipelineBarrier(
+            copyCmd, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+            0, 0, VK_NULL_HANDLE, 0, VK_NULL_HANDLE, 1, &imageMemoryBarrier);
+
+    vkCmdCopyBufferToImage(copyCmd, stagingBuffer, texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+
+    imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    vkCmdPipelineBarrier(copyCmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,
+                         VK_NULL_HANDLE, 0, VK_NULL_HANDLE, 1, &imageMemoryBarrier);
+
+    texture->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    flushCommandBuffer(copyCmd);
+
+    vkFreeMemory(logicalDevice, stagingMemory, VK_NULL_HANDLE);
+    vkDestroyBuffer(logicalDevice, stagingBuffer, VK_NULL_HANDLE);
+
+    VkSamplerCreateInfo sampler = { };
+    sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    sampler.magFilter = VK_FILTER_NEAREST;
+    sampler.minFilter = VK_FILTER_NEAREST;
+    sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+    sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    sampler.mipLodBias = 0.0f;
+    sampler.compareOp = VK_COMPARE_OP_NEVER;
+    sampler.minLod = 0.0f;
+    sampler.maxLod = (float)texture->mipLevels;
+    if (vulkanInfo->features.samplerAnisotropy) {
+        sampler.maxAnisotropy = vulkanInfo->deviceProperties.limits.maxSamplerAnisotropy;
+        sampler.anisotropyEnable = VK_TRUE;
+    } else {
+        sampler.maxAnisotropy = 1.0;
+        sampler.anisotropyEnable = VK_FALSE;
+    }
+    sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+    CHECK_RESULT_VK(vkCreateSampler(logicalDevice, &sampler, nullptr, &texture->sampler))
+
+    VkImageViewCreateInfo view = { };
+    view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    view.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    view.format = format;
+    view.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+
+    view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    view.subresourceRange.baseMipLevel = 0;
+    view.subresourceRange.baseArrayLayer = 0;
+    view.subresourceRange.layerCount = 1;
+    view.subresourceRange.levelCount = texture->mipLevels;
+    view.image = texture->image;
+
+    CHECK_RESULT_VK(vkCreateImageView(logicalDevice, &view, nullptr, &texture->view))
+}
+
+void ThinDrawer::updateImageDescriptors(s_texture* tex)
+{
+    VkDescriptorSetAllocateInfo allocInfo = { };
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = descriptorPool;
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = &textureSetLayout;
+
+    vkAllocateDescriptorSets(logicalDevice, &allocInfo, &tex->set);
+
+    VkDescriptorImageInfo imageBufferInfo;
+    imageBufferInfo.imageView = tex->view;
+    imageBufferInfo.sampler = tex->sampler;
+    imageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    VkWriteDescriptorSet textureWrite = { };
+    textureWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    textureWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    textureWrite.dstSet = tex->set;
+    textureWrite.descriptorCount = 1;
+    textureWrite.pImageInfo = &imageBufferInfo;
+    textureWrite.dstBinding = 0;
+
+    vkUpdateDescriptorSets(logicalDevice, 1, &textureWrite, 0, NULL);
 }
 
 void ThinDrawer::setSamples()

@@ -5,7 +5,7 @@ layout (location = 1) in vec2 i_texCoord;
 
 layout (location = 0) out vec2 o_texCoord;
 
-layout (binding = 0) uniform UBO 
+layout (set = 0, binding = 0) uniform UBO
 {
 	mat4 orthoMatrix;
 	mat4 modelMatrix;

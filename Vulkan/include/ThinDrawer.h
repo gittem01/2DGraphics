@@ -42,6 +42,7 @@ typedef struct
 typedef struct
 {
     VkPhysicalDeviceProperties deviceProperties;
+    VkPhysicalDeviceFeatures features;
     VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
 } s_vulkanInfo;
 
@@ -77,11 +78,30 @@ typedef struct
     s_stagingBuffer indices;
 } s_stagingBuffers;
 
-typedef struct {
+typedef struct
+{
     glm::mat4 orthoMatrix;
     glm::mat4 modelMatrix;
     glm::mat4 viewMatrix;
 } s_uboVS;
+
+typedef struct
+{
+    VkSampler sampler;
+    VkImage image;
+    VkImageLayout imageLayout;
+    VkDeviceMemory deviceMemory;
+    VkDescriptorSet set;
+    VkImageView view;
+    uint32_t width, height;
+    uint32_t mipLevels;
+} s_texture;
+
+typedef struct
+{
+    glm::vec2 pos;
+    glm::vec2 uv;
+} s_vertex;
 
 class SwapChain;
 
@@ -112,6 +132,7 @@ public:
     std::vector<VkCommandBuffer> drawCommandBuffers;
 
     VkDescriptorSetLayout descriptorSetLayout;
+    VkDescriptorSetLayout textureSetLayout;
     VkPipelineLayout pipelineLayout;
     VkPipeline pipeline;
     VkDescriptorPool descriptorPool;
@@ -120,6 +141,8 @@ public:
     s_vertices vertices;
     s_indices indices;
     s_uniformBufferVS uniformBufferVS;
+
+    s_texture singleTexture;
 
     void initBase();
 
@@ -144,7 +167,10 @@ public:
     uint32_t getMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties);
     void setSamples();
 
+    VkCommandBuffer createCommandBuffer(VkCommandBufferLevel level, VkCommandPool pool, bool begin);
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    void loadTexture(char* fileName, s_texture* texture);
+    void updateImageDescriptors(s_texture* tex);
     void createImage(uint32_t width, uint32_t p_height, uint32_t mipLevels,
                      VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                      VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
