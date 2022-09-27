@@ -144,7 +144,9 @@ public:
 
     s_texture singleTexture;
 
+    void createWindow();
     void initBase();
+    void initExtra();
 
     void createInstance();
     void createCommands();
@@ -168,7 +170,6 @@ public:
     void setSamples();
 
     VkCommandBuffer createCommandBuffer(VkCommandBufferLevel level, VkCommandPool pool, bool begin);
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     void loadTexture(char* fileName, s_texture* texture);
     void updateImageDescriptors(s_texture* tex);
     void createImage(uint32_t width, uint32_t p_height, uint32_t mipLevels,
