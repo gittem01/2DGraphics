@@ -1,6 +1,7 @@
 #include <ThinDrawer.h>
 #include <SwapChain.h>
 #include <Shader.h>
+#include <vkInit.h>
 #include <vector>
 #include <array>
 
@@ -33,11 +34,10 @@ void ThinDrawer::renderLoop()
     CHECK_RESULT_VK(vkResetCommandBuffer(currentFrame.commandBuffer, 0))
 
     vkAcquireNextImageKHR(logicalDevice, swapChain->swapChain, UINT64_MAX,
-                          currentFrame.presentSemaphore, NULL, &lastSwapChainImageIndex);
+                          currentFrame.presentSemaphore, VK_NULL_HANDLE, &lastSwapChainImageIndex);
 
     VkSubmitInfo submit = { };
     submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submit.pNext = NULL;
 
     VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     submit.pWaitDstStageMask = &waitStage;
@@ -54,7 +54,6 @@ void ThinDrawer::renderLoop()
     CHECK_RESULT_VK(vkQueueSubmit(queues.graphicsQueue, 1, &submit, currentFrame.renderFence))
     VkPresentInfoKHR presentInfo = { };
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    presentInfo.pNext = NULL;
     presentInfo.pSwapchains = &swapChain->swapChain;
     presentInfo.swapchainCount = 1;
 
@@ -79,103 +78,96 @@ void ThinDrawer::prepareVertices()
             };
     uint32_t vertexBufferSize = static_cast<uint32_t>(vertexBuffer.size()) * sizeof(s_vertex);
 
+    std::vector<s_basicVertex> vertexBuffer2 =
+            {
+                    { {+1.0f, +1.0f} },
+                    { {-1.0f, +1.0f} },
+                    { {-1.0f, -1.0f} },
+                    { {+1.0f, -1.0f} },
+            };
+    uint32_t vertexBufferSize2 = static_cast<uint32_t>(vertexBuffer2.size()) * sizeof(s_basicVertex);
+
     std::vector<uint32_t> indexBuffer = { 0, 1, 2, 2, 3, 0 };
     indices.count = static_cast<uint32_t>(indexBuffer.size());
     uint32_t indexBufferSize = indices.count * sizeof(uint32_t);
 
-    VkMemoryAllocateInfo memAlloc = { };
-    memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    VkMemoryRequirements memReqs;
-
     void *data;
 
-    VkBufferCreateInfo vertexBufferInfo = { };
-    vertexBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    vertexBufferInfo.size = vertexBufferSize;
-    vertexBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    auto func = [&](void* bufferData, uint32_t dataSize, VkBufferUsageFlags flags,
+            s_stagingBuffer& stagingBuffer, s_buffers& fillBuffer){
+        VkMemoryAllocateInfo memAlloc = { };
+        memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        VkMemoryRequirements memReqs;
 
-    s_stagingBuffers stagingBuffers;
+        VkBufferCreateInfo vertexBufferInfo = vkinit::bufferCreateInfo(dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 
-    CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &vertexBufferInfo, nullptr, &stagingBuffers.vertices.buffer))
-    vkGetBufferMemoryRequirements(logicalDevice, stagingBuffers.vertices.buffer, &memReqs);
-    memAlloc.allocationSize = memReqs.size;
-    memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &memAlloc, nullptr, &stagingBuffers.vertices.memory))
+        CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &vertexBufferInfo, VK_NULL_HANDLE, &stagingBuffer.buffer))
+        vkGetBufferMemoryRequirements(logicalDevice, stagingBuffer.buffer, &memReqs);
+        memAlloc.allocationSize = memReqs.size;
+        memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &memAlloc, VK_NULL_HANDLE, &stagingBuffer.memory))
 
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, stagingBuffers.vertices.memory, 0, memAlloc.allocationSize, 0, &data))
-    memcpy(data, vertexBuffer.data(), vertexBufferSize);
-    vkUnmapMemory(logicalDevice, stagingBuffers.vertices.memory);
-    CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, stagingBuffers.vertices.buffer, stagingBuffers.vertices.memory, 0))
+        CHECK_RESULT_VK(vkMapMemory(logicalDevice, stagingBuffer.memory, 0, memAlloc.allocationSize, 0, &data))
+        memcpy(data, bufferData, dataSize);
+        vkUnmapMemory(logicalDevice, stagingBuffer.memory);
+        CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, stagingBuffer.buffer, stagingBuffer.memory, 0))
 
-    vertexBufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &vertexBufferInfo, nullptr, &vertices.buffer))
-    vkGetBufferMemoryRequirements(logicalDevice, vertices.buffer, &memReqs);
-    memAlloc.allocationSize = memReqs.size;
-    memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &memAlloc, nullptr, &vertices.memory))
-    CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, vertices.buffer, vertices.memory, 0))
+        vertexBufferInfo.usage = flags;
+        CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &vertexBufferInfo, VK_NULL_HANDLE, &fillBuffer.buffer))
+        vkGetBufferMemoryRequirements(logicalDevice, fillBuffer.buffer, &memReqs);
+        memAlloc.allocationSize = memReqs.size;
+        memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &memAlloc, VK_NULL_HANDLE, &fillBuffer.memory))
+        CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, fillBuffer.buffer, fillBuffer.memory, 0))
+    };
 
-    VkBufferCreateInfo bufferCreateInfo = { };
-    bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferCreateInfo.size = indexBufferSize;
-    bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    s_stagingBuffer vertexBuffers;
+    s_stagingBuffer vertexBuffers2;
+    s_stagingBuffer indexBuffers;
 
-    CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffers.indices.buffer))
-    vkGetBufferMemoryRequirements(logicalDevice, stagingBuffers.indices.buffer, &memReqs);
-    memAlloc.allocationSize = memReqs.size;
-    memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &memAlloc, nullptr, &stagingBuffers.indices.memory))
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, stagingBuffers.indices.memory, 0, indexBufferSize, 0, &data))
-    memcpy(data, indexBuffer.data(), indexBufferSize);
-    vkUnmapMemory(logicalDevice, stagingBuffers.indices.memory);
-    CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, stagingBuffers.indices.buffer, stagingBuffers.indices.memory, 0))
-
-    bufferCreateInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &bufferCreateInfo, nullptr, &indices.buffer))
-    vkGetBufferMemoryRequirements(logicalDevice, indices.buffer, &memReqs);
-    memAlloc.allocationSize = memReqs.size;
-    memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &memAlloc, nullptr, &indices.memory))
-    CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, indices.buffer, indices.memory, 0))
+    func(vertexBuffer.data(), vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+         vertexBuffers, vertices);
+    func(vertexBuffer2.data(), vertexBufferSize2, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+         vertexBuffers2, vertices2);
+    func(indexBuffer.data(), indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+         indexBuffers, indices);
 
     VkCommandBuffer copyCmd = getCommandBuffer(true);
 
     VkBufferCopy copyRegion = { };
 
     copyRegion.size = vertexBufferSize;
-    vkCmdCopyBuffer(copyCmd, stagingBuffers.vertices.buffer, vertices.buffer, 1, &copyRegion);
+    vkCmdCopyBuffer(copyCmd, vertexBuffers.buffer, vertices.buffer, 1, &copyRegion);
+
+    copyRegion.size = vertexBufferSize2;
+    vkCmdCopyBuffer(copyCmd, vertexBuffers2.buffer, vertices2.buffer, 1, &copyRegion);
 
     copyRegion.size = indexBufferSize;
-    vkCmdCopyBuffer(copyCmd, stagingBuffers.indices.buffer, indices.buffer,	1, &copyRegion);
+    vkCmdCopyBuffer(copyCmd, indexBuffers.buffer, indices.buffer,	1, &copyRegion);
 
     flushCommandBuffer(copyCmd);
 
-    vkDestroyBuffer(logicalDevice, stagingBuffers.vertices.buffer, nullptr);
-    vkFreeMemory(logicalDevice, stagingBuffers.vertices.memory, nullptr);
-    vkDestroyBuffer(logicalDevice, stagingBuffers.indices.buffer, nullptr);
-    vkFreeMemory(logicalDevice, stagingBuffers.indices.memory, nullptr);
+    vkDestroyBuffer(logicalDevice, vertexBuffers.buffer, VK_NULL_HANDLE);
+    vkFreeMemory(logicalDevice, vertexBuffers.memory, VK_NULL_HANDLE);
+    vkDestroyBuffer(logicalDevice, vertexBuffers2.buffer, VK_NULL_HANDLE);
+    vkFreeMemory(logicalDevice, vertexBuffers2.memory, VK_NULL_HANDLE);
+    vkDestroyBuffer(logicalDevice, indexBuffers.buffer, VK_NULL_HANDLE);
+    vkFreeMemory(logicalDevice, indexBuffers.memory, VK_NULL_HANDLE);
 }
 
 void ThinDrawer::prepareUniformBuffers()
 {
+    VkBufferCreateInfo bufferInfo = vkinit::bufferCreateInfo(sizeof(s_uboVS), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+    CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &bufferInfo, VK_NULL_HANDLE, &uniformBufferVS.buffer))
+
     VkMemoryRequirements memReqs;
-
-    VkBufferCreateInfo bufferInfo = { };
-    VkMemoryAllocateInfo allocInfo = { };
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.pNext = nullptr;
-    allocInfo.allocationSize = 0;
-    allocInfo.memoryTypeIndex = 0;
-
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = sizeof(s_uboVS);
-    bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-
-    CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &bufferInfo, nullptr, &uniformBufferVS.buffer))
+    VkMemoryAllocateInfo allocInfo = vkinit::memoryAllocateInfo();
     vkGetBufferMemoryRequirements(logicalDevice, uniformBufferVS.buffer, &memReqs);
     allocInfo.allocationSize = memReqs.size;
-    allocInfo.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &(uniformBufferVS.memory)))
+    allocInfo.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits,
+                                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &allocInfo, VK_NULL_HANDLE, &uniformBufferVS.memory))
     CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, uniformBufferVS.buffer, uniformBufferVS.memory, 0))
 
     uniformBufferVS.descriptor.buffer = uniformBufferVS.buffer;
@@ -186,6 +178,7 @@ void ThinDrawer::prepareUniformBuffers()
 
     uboVS.orthoMatrix = glm::ortho(-4.0f, +4.0f, -2.25f, +2.25f, -100.0f, 100.0f);
     uboVS.modelMatrix = glm::mat4(1.0f);
+    uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix, glm::pi<float>() * 0.25f, glm::vec3(0, 0, 1));
     uboVS.modelMatrix = glm::scale(uboVS.modelMatrix, glm::vec3(2.5f, 1.0f, 1.0f));
 
     uint8_t *pData;
@@ -193,45 +186,94 @@ void ThinDrawer::prepareUniformBuffers()
     memcpy(pData, &uboVS, sizeof(uboVS));
 
     vkUnmapMemory(logicalDevice, uniformBufferVS.memory);
+
+    // for debug circle
+
+    bufferInfo = vkinit::bufferCreateInfo(sizeof(s_uboVS), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+    CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &bufferInfo, VK_NULL_HANDLE, &dc_uniformBufferVS.buffer))
+
+    vkGetBufferMemoryRequirements(logicalDevice, dc_uniformBufferVS.buffer, &memReqs);
+    allocInfo.allocationSize = memReqs.size;
+    allocInfo.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits,
+                                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &allocInfo, VK_NULL_HANDLE, &dc_uniformBufferVS.memory))
+    CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, dc_uniformBufferVS.buffer, dc_uniformBufferVS.memory, 0))
+
+    dc_uniformBufferVS.descriptor.buffer = dc_uniformBufferVS.buffer;
+    dc_uniformBufferVS.descriptor.offset = 0;
+    dc_uniformBufferVS.descriptor.range = sizeof(s_uboVS);
+
+    uboVS.modelMatrix = glm::mat4(1.0f);
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, dc_uniformBufferVS.memory, 0, sizeof(uboVS), 0, (void **)&pData))
+    memcpy(pData, &uboVS, sizeof(uboVS));
+
+    vkUnmapMemory(logicalDevice, dc_uniformBufferVS.memory);
+
+    bufferInfo = vkinit::bufferCreateInfo(sizeof(s_uboFSColor), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+    CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &bufferInfo, VK_NULL_HANDLE, &dc_uniformBufferFS.buffer))
+
+    vkGetBufferMemoryRequirements(logicalDevice, uniformBufferVS.buffer, &memReqs);
+    allocInfo.allocationSize = memReqs.size;
+    allocInfo.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits,
+                                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &allocInfo, VK_NULL_HANDLE, &dc_uniformBufferFS.memory))
+    CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, dc_uniformBufferFS.buffer, dc_uniformBufferFS.memory, 0))
+
+    dc_uniformBufferFS.descriptor.buffer = dc_uniformBufferFS.buffer;
+    dc_uniformBufferFS.descriptor.offset = 0;
+    dc_uniformBufferFS.descriptor.range = sizeof(s_uboFSColor);
+
+    uboVS.modelMatrix = glm::mat4(1.0f);
+    uboVS.modelMatrix = glm::scale(uboVS.modelMatrix, glm::vec3(0.5f, 0.5f, 0.5f));
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, dc_uniformBufferFS.memory, 0, sizeof(uboVS), 0, (void **)&pData))
+    memcpy(pData, &uboVS, sizeof(uboVS));
+
+    vkUnmapMemory(logicalDevice, dc_uniformBufferFS.memory);
+
+    s_uboFSColor uboFSColor;
+
+    uboFSColor.color = glm::vec4(0.2f, 1.0f, 1.0f, 0.6f);
+
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, dc_uniformBufferFS.memory, 0, sizeof(uboFSColor), 0, (void **)&pData))
+    memcpy(pData, &uboFSColor, sizeof(uboFSColor));
+
+    vkUnmapMemory(logicalDevice, dc_uniformBufferFS.memory);
 }
 
 void ThinDrawer::setupDescriptorSetLayout()
 {
-    VkDescriptorSetLayoutBinding layoutBinding = { };
-    layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    layoutBinding.descriptorCount = 1;
-    layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    layoutBinding.pImmutableSamplers = nullptr;
+    VkDescriptorSetLayoutBinding layoutBinding =
+            vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1, 0);
 
-    VkDescriptorSetLayoutCreateInfo descriptorLayout = { };
-    descriptorLayout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptorLayout.pNext = nullptr;
-    descriptorLayout.bindingCount = 1;
-    descriptorLayout.pBindings = &layoutBinding;
+    VkDescriptorSetLayoutCreateInfo descriptorLayout = vkinit::descriptorSetLayoutCreateInfo(&layoutBinding, 1);
+    CHECK_RESULT_VK(vkCreateDescriptorSetLayout(logicalDevice, &descriptorLayout, VK_NULL_HANDLE, &descriptorSetLayout))
 
-    CHECK_RESULT_VK(vkCreateDescriptorSetLayout(logicalDevice, &descriptorLayout, nullptr, &descriptorSetLayout))
+    VkDescriptorSetLayoutBinding textureBind =
+            vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,
+                                               1, 0);
 
-    VkDescriptorSetLayoutBinding textureBind = { };
-    textureBind.binding = 0;
-    textureBind.descriptorCount = 1;
-    textureBind.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    textureBind.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    VkDescriptorSetLayoutCreateInfo setInfo = { };
-    setInfo.bindingCount = 1;
-    setInfo.flags = 0;
-    setInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    setInfo.pBindings = &textureBind;
-    CHECK_RESULT_VK(vkCreateDescriptorSetLayout(logicalDevice, &setInfo, NULL, &textureSetLayout))
+    VkDescriptorSetLayoutCreateInfo setInfo = vkinit::descriptorSetLayoutCreateInfo(&textureBind, 1);
+    CHECK_RESULT_VK(vkCreateDescriptorSetLayout(logicalDevice, &setInfo, VK_NULL_HANDLE, &textureSetLayout))
 
     VkDescriptorSetLayout setLayouts[] = { descriptorSetLayout, textureSetLayout };
 
-    VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = { };
-    pPipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pPipelineLayoutCreateInfo.setLayoutCount = sizeof(setLayouts) / sizeof(setLayouts[0]);
-    pPipelineLayoutCreateInfo.pSetLayouts = setLayouts;
-
+    VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = vkinit::pipelineLayoutCreateInfo(
+            setLayouts, sizeof(setLayouts) / sizeof(setLayouts[0]));
     CHECK_RESULT_VK(vkCreatePipelineLayout(logicalDevice, &pPipelineLayoutCreateInfo, VK_NULL_HANDLE, &pipelineLayout))
+
+    //for  debug circle
+
+    VkDescriptorSetLayoutBinding layoutBinding2 = vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                                                     VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
+
+    VkDescriptorSetLayoutBinding bindings[] = { layoutBinding, layoutBinding2 };
+
+    descriptorLayout = vkinit::descriptorSetLayoutCreateInfo(bindings, sizeof(bindings) / sizeof(bindings[0]));
+    CHECK_RESULT_VK(vkCreateDescriptorSetLayout(logicalDevice, &descriptorLayout, VK_NULL_HANDLE, &dc_descriptorSetLayout))
+
+    VkDescriptorSetLayout setLayouts2[] = { dc_descriptorSetLayout };
+    pPipelineLayoutCreateInfo = vkinit::pipelineLayoutCreateInfo(setLayouts2, sizeof(setLayouts2) / sizeof(setLayouts2[0]));
+    CHECK_RESULT_VK(vkCreatePipelineLayout(logicalDevice, &pPipelineLayoutCreateInfo, VK_NULL_HANDLE, &dc_pipelineLayout))
 }
 
 void ThinDrawer::preparePipelines()
@@ -294,7 +336,7 @@ void ThinDrawer::preparePipelines()
     VkPipelineMultisampleStateCreateInfo multisampleState = { };
     multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampleState.rasterizationSamples = samples;
-    multisampleState.pSampleMask = nullptr;
+    multisampleState.pSampleMask = VK_NULL_HANDLE;
 
     VkVertexInputBindingDescription vertexInputBinding = { };
     vertexInputBinding.binding = 0;
@@ -341,7 +383,29 @@ void ThinDrawer::preparePipelines()
     pipelineCreateInfo.pDepthStencilState = VK_NULL_HANDLE;
     pipelineCreateInfo.pDynamicState = VK_NULL_HANDLE;
 
-    CHECK_RESULT_VK(vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline))
+    CHECK_RESULT_VK(vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, VK_NULL_HANDLE, &pipeline))
+
+    // for debug circle
+
+    pipelineCreateInfo.layout = dc_pipelineLayout;
+
+    vertexInputBinding.stride = sizeof(s_basicVertex);
+
+    vertexInputState.vertexBindingDescriptionCount = 1;
+    vertexInputState.vertexAttributeDescriptionCount = 1;
+    vertexInputState.pVertexAttributeDescriptions = &vertexInputAttributeFor0;
+
+    fileNames =	{
+            std::string("../assets/shaders/VulkanDebugCircle/vertex_shader.vert.spv"),
+            std::string("../assets/shaders/VulkanDebugCircle/fragment_shader.frag.spv")
+    };
+
+    Shader shader2 = Shader(logicalDevice, fileNames);
+
+    pipelineCreateInfo.stageCount = shader2.shaderStages.size();
+    pipelineCreateInfo.pStages = shader2.shaderStages.data();
+
+    CHECK_RESULT_VK(vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, VK_NULL_HANDLE, &dc_pipeline))
 }
 
 void ThinDrawer::setupDescriptorPool()
@@ -357,21 +421,16 @@ void ThinDrawer::setupDescriptorPool()
 
     VkDescriptorPoolCreateInfo descriptorPoolInfo = { };
     descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    descriptorPoolInfo.pNext = nullptr;
     descriptorPoolInfo.poolSizeCount = sizes.size();
     descriptorPoolInfo.pPoolSizes = sizes.data();
     descriptorPoolInfo.maxSets = 10;
 
-    CHECK_RESULT_VK(vkCreateDescriptorPool(logicalDevice, &descriptorPoolInfo, nullptr, &descriptorPool))
+    CHECK_RESULT_VK(vkCreateDescriptorPool(logicalDevice, &descriptorPoolInfo, VK_NULL_HANDLE, &descriptorPool))
 }
 
 void ThinDrawer::setupDescriptorSet()
 {
-    VkDescriptorSetAllocateInfo allocInfo = { };
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = descriptorPool;
-    allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &descriptorSetLayout;
+    VkDescriptorSetAllocateInfo allocInfo = vkinit::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayout, 1);
 
     CHECK_RESULT_VK(vkAllocateDescriptorSets(logicalDevice, &allocInfo, &descriptorSet))
 
@@ -384,30 +443,33 @@ void ThinDrawer::setupDescriptorSet()
     writeDescriptorSet.pBufferInfo = &uniformBufferVS.descriptor;
     writeDescriptorSet.dstBinding = 0;
 
-    vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
+    vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
 
     updateImageDescriptors(&singleTexture);
+
+    // for debug circle
+
+    allocInfo = vkinit::descriptorSetAllocateInfo(descriptorPool, &dc_descriptorSetLayout, 1);
+
+    CHECK_RESULT_VK(vkAllocateDescriptorSets(logicalDevice, &allocInfo, &dc_descriptorSet))
+
+    writeDescriptorSet.dstSet = dc_descriptorSet;
+    writeDescriptorSet.pBufferInfo = &dc_uniformBufferVS.descriptor;
+    writeDescriptorSet.dstBinding = 0;
+    vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
+
+    writeDescriptorSet.dstBinding = 1;
+    writeDescriptorSet.pBufferInfo = &dc_uniformBufferFS.descriptor;
+    vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
 }
 
 void ThinDrawer::buildCommandBuffers()
 {
-    VkCommandBufferBeginInfo cmdBufInfo = { };
-    cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    cmdBufInfo.pNext = nullptr;
+    VkCommandBufferBeginInfo cmdBufInfo = vkinit::commandBufferBeginInfo();
 
-    VkClearValue clearValues[1];
-    clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-
-    VkRenderPassBeginInfo renderPassBeginInfo = { };
-    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.pNext = nullptr;
-    renderPassBeginInfo.renderPass = renderPass;
-    renderPassBeginInfo.renderArea.offset.x = 0;
-    renderPassBeginInfo.renderArea.offset.y = 0;
-    renderPassBeginInfo.renderArea.extent.width = width;
-    renderPassBeginInfo.renderArea.extent.height = height;
-    renderPassBeginInfo.clearValueCount = 1;
-    renderPassBeginInfo.pClearValues = clearValues;
+    VkClearValue clearValue;
+    clearValue.color = { 0.0f, 0.0f, 0.0f, 0.0f };
+    VkRenderPassBeginInfo renderPassBeginInfo = vkinit::renderPassBeginInfo(renderPass, width, height, &clearValue);
 
     for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
     {
@@ -444,6 +506,18 @@ void ThinDrawer::buildCommandBuffers()
         vkCmdBindVertexBuffers(drawCommandBuffers[i], 0, 1, &vertices.buffer, offsets);
         vkCmdBindIndexBuffer(drawCommandBuffers[i], indices.buffer, 0, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(drawCommandBuffers[i], indices.count, 1, 0, 0, 1);
+
+        // for debug circle
+
+        vkCmdBindPipeline(drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, dc_pipeline);
+
+        vkCmdBindDescriptorSets(drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                dc_pipelineLayout, 0, 1, &dc_descriptorSet, 0, VK_NULL_HANDLE);
+
+        vkCmdBindVertexBuffers(drawCommandBuffers[i], 0, 1, &vertices2.buffer, offsets);
+        vkCmdBindIndexBuffer(drawCommandBuffers[i], indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdDrawIndexed(drawCommandBuffers[i], indices.count, 1, 0, 0, 1);
+
         vkCmdEndRenderPass(drawCommandBuffers[i]);
         CHECK_RESULT_VK(vkEndCommandBuffer(drawCommandBuffers[i]))
     }

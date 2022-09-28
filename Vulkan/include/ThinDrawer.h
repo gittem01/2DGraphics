@@ -50,21 +50,15 @@ typedef struct
 {
     VkDeviceMemory memory;
     VkBuffer buffer;
-} s_vertices;
-
-typedef struct
-{
-    VkDeviceMemory memory;
-    VkBuffer buffer;
     uint32_t count;
-} s_indices;
+} s_buffers;
 
 typedef struct
 {
     VkDeviceMemory memory;
     VkBuffer buffer;
     VkDescriptorBufferInfo descriptor;
-} s_uniformBufferVS;
+} s_uniformBuffer;
 
 typedef struct
 {
@@ -82,8 +76,12 @@ typedef struct
 {
     glm::mat4 orthoMatrix;
     glm::mat4 modelMatrix;
-    glm::mat4 viewMatrix;
 } s_uboVS;
+
+typedef struct
+{
+    glm::vec4 color;
+} s_uboFSColor;
 
 typedef struct
 {
@@ -102,6 +100,11 @@ typedef struct
     glm::vec2 pos;
     glm::vec2 uv;
 } s_vertex;
+
+typedef struct
+{
+    glm::vec2 pos;
+} s_basicVertex;
 
 class SwapChain;
 
@@ -131,16 +134,26 @@ public:
     s_frameData frames[NUM_FRAMES];
     std::vector<VkCommandBuffer> drawCommandBuffers;
 
+    VkDescriptorPool descriptorPool;
+
     VkDescriptorSetLayout descriptorSetLayout;
     VkDescriptorSetLayout textureSetLayout;
     VkPipelineLayout pipelineLayout;
     VkPipeline pipeline;
-    VkDescriptorPool descriptorPool;
     VkDescriptorSet descriptorSet;
 
-    s_vertices vertices;
-    s_indices indices;
-    s_uniformBufferVS uniformBufferVS;
+    VkDescriptorSetLayout dc_descriptorSetLayout;
+    VkPipelineLayout dc_pipelineLayout;
+    VkPipeline dc_pipeline;
+    VkDescriptorSet dc_descriptorSet;
+
+    s_buffers vertices;
+    s_buffers indices;
+    s_uniformBuffer uniformBufferVS;
+
+    s_buffers vertices2;
+    s_uniformBuffer dc_uniformBufferVS;
+    s_uniformBuffer dc_uniformBufferFS;
 
     s_texture singleTexture;
 

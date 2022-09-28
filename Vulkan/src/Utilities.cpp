@@ -1,6 +1,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 
 #include <ThinDrawer.h>
+#include <vkInit.h>
 #include <stb_image.h>
 
 bool ThinDrawer::isDeviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
@@ -12,7 +13,7 @@ bool ThinDrawer::isDeviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR 
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities);
 
     int formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, (uint32_t*)&formatCount, nullptr);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, (uint32_t*)&formatCount, VK_NULL_HANDLE);
     if (formatCount != 0)
     {
         surfaceFormats = (VkSurfaceFormatKHR*)malloc(sizeof(VkSurfaceFormatKHR) * formatCount);
@@ -20,7 +21,7 @@ bool ThinDrawer::isDeviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR 
     }
 
     int presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, (uint32_t*)&presentModeCount, nullptr);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, (uint32_t*)&presentModeCount, VK_NULL_HANDLE);
     if (presentModeCount != 0)
     {
         presentModes = (VkPresentModeKHR*)malloc(sizeof(VkPresentModeKHR) * presentModeCount);
@@ -52,8 +53,7 @@ VkCommandBuffer ThinDrawer::getCommandBuffer(bool begin)
 
     if (begin)
     {
-        VkCommandBufferBeginInfo cmdBufInfo = { };
-        cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        VkCommandBufferBeginInfo cmdBufInfo = vkinit::commandBufferBeginInfo();
         CHECK_RESULT_VK(vkBeginCommandBuffer(cmdBuffer, &cmdBufInfo))
     }
 
@@ -62,8 +62,6 @@ VkCommandBuffer ThinDrawer::getCommandBuffer(bool begin)
 
 void ThinDrawer::flushCommandBuffer(VkCommandBuffer commandBuffer)
 {
-    assert(commandBuffer != VK_NULL_HANDLE);
-
     CHECK_RESULT_VK(vkEndCommandBuffer(commandBuffer))
 
     VkSubmitInfo submitInfo = { };
@@ -71,16 +69,14 @@ void ThinDrawer::flushCommandBuffer(VkCommandBuffer commandBuffer)
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    VkFenceCreateInfo fenceCreateInfo = { };
-    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceCreateInfo.flags = 0;
+    VkFenceCreateInfo fenceCreateInfo = vkinit::fenceCreateInfo();
     VkFence fence;
-    CHECK_RESULT_VK(vkCreateFence(logicalDevice, &fenceCreateInfo, nullptr, &fence))
+    CHECK_RESULT_VK(vkCreateFence(logicalDevice, &fenceCreateInfo, VK_NULL_HANDLE, &fence))
 
     CHECK_RESULT_VK(vkQueueSubmit(queues.graphicsQueue, 1, &submitInfo, fence))
     CHECK_RESULT_VK(vkWaitForFences(logicalDevice, 1, &fence, VK_TRUE, UINT64_MAX))
 
-    vkDestroyFence(logicalDevice, fence, nullptr);
+    vkDestroyFence(logicalDevice, fence, VK_NULL_HANDLE);
     vkFreeCommandBuffers(logicalDevice, uploadPool, 1, &commandBuffer);
 }
 
@@ -121,7 +117,7 @@ void ThinDrawer::createImage(uint32_t p_width, uint32_t p_height, uint32_t mipLe
     imageInfo.samples = numSamples;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    CHECK_RESULT_VK(vkCreateImage(logicalDevice, &imageInfo, nullptr, &image))
+    CHECK_RESULT_VK(vkCreateImage(logicalDevice, &imageInfo, VK_NULL_HANDLE, &image))
 
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(logicalDevice, image, &memRequirements);
@@ -131,7 +127,7 @@ void ThinDrawer::createImage(uint32_t p_width, uint32_t p_height, uint32_t mipLe
     allocInfo.allocationSize = memRequirements.size;
     allocInfo.memoryTypeIndex = getMemoryTypeIndex(memRequirements.memoryTypeBits, properties);
 
-    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &imageMemory))
+    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &allocInfo, VK_NULL_HANDLE, &imageMemory))
 
     CHECK_RESULT_VK(vkBindImageMemory(logicalDevice, image, imageMemory, 0))
 }
@@ -148,8 +144,7 @@ VkCommandBuffer ThinDrawer::createCommandBuffer(VkCommandBufferLevel level, VkCo
     CHECK_RESULT_VK(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, &cmdBuffer))
     if (begin)
     {
-        VkCommandBufferBeginInfo cmdBufInfo = { };
-        cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        VkCommandBufferBeginInfo cmdBufInfo = vkinit::commandBufferBeginInfo();
         CHECK_RESULT_VK(vkBeginCommandBuffer(cmdBuffer, &cmdBufInfo))
     }
     return cmdBuffer;
@@ -181,19 +176,14 @@ void ThinDrawer::loadTexture(char* fileName, s_texture* texture)
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingMemory;
 
-    VkBufferCreateInfo bufferCreateInfo = { };
-    bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-
-    bufferCreateInfo.size = imageSize;
-    bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer))
+    VkBufferCreateInfo bufferCreateInfo = vkinit::bufferCreateInfo(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &bufferCreateInfo, VK_NULL_HANDLE, &stagingBuffer))
 
     vkGetBufferMemoryRequirements(logicalDevice, stagingBuffer, &memReqs);
     memAllocInfo.allocationSize = memReqs.size;
     memAllocInfo.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits,
                                                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &memAllocInfo, nullptr, &stagingMemory))
+    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &memAllocInfo, VK_NULL_HANDLE, &stagingMemory))
     CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, stagingBuffer, stagingMemory, 0))
 
     uint8_t *data;
@@ -279,7 +269,7 @@ void ThinDrawer::loadTexture(char* fileName, s_texture* texture)
         sampler.anisotropyEnable = VK_FALSE;
     }
     sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
-    CHECK_RESULT_VK(vkCreateSampler(logicalDevice, &sampler, nullptr, &texture->sampler))
+    CHECK_RESULT_VK(vkCreateSampler(logicalDevice, &sampler, VK_NULL_HANDLE, &texture->sampler))
 
     VkImageViewCreateInfo view = { };
     view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -294,16 +284,12 @@ void ThinDrawer::loadTexture(char* fileName, s_texture* texture)
     view.subresourceRange.levelCount = texture->mipLevels;
     view.image = texture->image;
 
-    CHECK_RESULT_VK(vkCreateImageView(logicalDevice, &view, nullptr, &texture->view))
+    CHECK_RESULT_VK(vkCreateImageView(logicalDevice, &view, VK_NULL_HANDLE, &texture->view))
 }
 
 void ThinDrawer::updateImageDescriptors(s_texture* tex)
 {
-    VkDescriptorSetAllocateInfo allocInfo = { };
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = descriptorPool;
-    allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &textureSetLayout;
+    VkDescriptorSetAllocateInfo allocInfo = vkinit::descriptorSetAllocateInfo(descriptorPool, &textureSetLayout, 1);
 
     vkAllocateDescriptorSets(logicalDevice, &allocInfo, &tex->set);
 
@@ -320,5 +306,5 @@ void ThinDrawer::updateImageDescriptors(s_texture* tex)
     textureWrite.pImageInfo = &imageBufferInfo;
     textureWrite.dstBinding = 0;
 
-    vkUpdateDescriptorSets(logicalDevice, 1, &textureWrite, 0, NULL);
+    vkUpdateDescriptorSets(logicalDevice, 1, &textureWrite, 0, VK_NULL_HANDLE);
 }
