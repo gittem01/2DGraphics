@@ -336,7 +336,6 @@ void ThinDrawer::preparePipelines()
     VkPipelineMultisampleStateCreateInfo multisampleState = { };
     multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampleState.rasterizationSamples = samples;
-    multisampleState.pSampleMask = VK_NULL_HANDLE;
 
     VkVertexInputBindingDescription vertexInputBinding = { };
     vertexInputBinding.binding = 0;

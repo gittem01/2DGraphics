@@ -1,12 +1,14 @@
 #include <Shader.h>
 
-Shader::Shader(VkDevice device, std::vector<std::string> fileNames) {
+Shader::Shader(VkDevice device, std::vector<std::string> fileNames)
+{
     this->device = device;
     this->shaderStages.resize(fileNames.size());
 
     VkShaderStageFlagBits bits[3] = { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_GEOMETRY_BIT };
 
-    for (int i = 0; i < fileNames.size(); i++) {
+    for (int i = 0; i < fileNames.size(); i++)
+    {
         VkShaderModule shaderModule = load_shader_module(device, fileNames[i].c_str());
         shaderModules.push_back(shaderModule);
         VkPipelineShaderStageCreateInfo info = { };
@@ -19,7 +21,8 @@ Shader::Shader(VkDevice device, std::vector<std::string> fileNames) {
     }
 }
 
-Shader::~Shader() {
+Shader::~Shader()
+{
     for (int i = 0; i < shaderModules.size(); i++) {
         vkDestroyShaderModule(device, shaderModules.at(i), NULL);
     }
@@ -47,7 +50,8 @@ VkShaderModule Shader::load_shader_module(VkDevice device, const char* filePath)
     createInfo.pCode = buffer.data();
 
     VkShaderModule shaderModule;
-    if (vkCreateShaderModule(device, &createInfo, NULL, &shaderModule) != VK_SUCCESS) {
+    if (vkCreateShaderModule(device, &createInfo, NULL, &shaderModule) != VK_SUCCESS)
+    {
         return NULL;
     }
 

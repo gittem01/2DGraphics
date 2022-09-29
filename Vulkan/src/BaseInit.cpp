@@ -76,7 +76,7 @@ void ThinDrawer::createInstance()
     const char** glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-#ifdef __APPLE__
+#if VK_KHR_portability_enumeration
     instanceInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
     extensionCount = glfwExtensionCount + 2;
     const char** requiredExtensions = (const char**)malloc(sizeof(const char*) * extensionCount);
@@ -84,8 +84,8 @@ void ThinDrawer::createInstance()
     requiredExtensions[glfwExtensionCount + 1] = "VK_KHR_get_physical_device_properties2";
 #else
     extensionCount = glfwExtensionCount;
-    const char** requiredExtensions = malloc(sizeof(char*) * glfwExtensionCount);
-#endif // __APPLE__
+    const char** requiredExtensions = (const char**)malloc(sizeof(char*) * glfwExtensionCount);
+#endif // VK_KHR_portability_enumeration
 
     memcpy(requiredExtensions, glfwExtensions, sizeof(const char*) * glfwExtensionCount);
 
