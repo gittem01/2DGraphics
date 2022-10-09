@@ -1,4 +1,6 @@
 #include <Shader.h>
+#include <IOHelper.h>
+#include <definitions.h>
 
 Shader::Shader(VkDevice device, std::vector<std::string> fileNames)
 {
@@ -32,9 +34,11 @@ Shader::~Shader()
 
 VkShaderModule Shader::load_shader_module(VkDevice device, const char* filePath)
 {
-    std::ifstream file(filePath, std::ios::ate | std::ios::binary);
+    std::string finalPath = IOHelper::assetsFolder + filePath;
+    
+    std::ifstream file(finalPath.c_str(), std::ios::ate | std::ios::binary);
     if (!file.is_open()) {
-        printf("Could not find shader file: %s\n", filePath);
+        printf("Could not find shader file: %s\n", finalPath.c_str());
         return NULL;
     }
 
@@ -50,10 +54,7 @@ VkShaderModule Shader::load_shader_module(VkDevice device, const char* filePath)
     createInfo.pCode = buffer.data();
 
     VkShaderModule shaderModule;
-    if (vkCreateShaderModule(device, &createInfo, NULL, &shaderModule) != VK_SUCCESS)
-    {
-        return NULL;
-    }
+    CHECK_RESULT_VK(vkCreateShaderModule(device, &createInfo, NULL, &shaderModule))
 
     return shaderModule;
 }

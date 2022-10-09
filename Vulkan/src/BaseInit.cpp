@@ -1,5 +1,6 @@
 #include <ThinDrawer.h>
 #include <SwapChain.h>
+#include <IOHelper.h>
 
 void ThinDrawer::createWindow()
 {
@@ -31,6 +32,8 @@ void ThinDrawer::createWindow()
 
 void ThinDrawer::initBase()
 {
+    IOHelper::getAssetsFolder();
+
     vulkanInfo = new s_vulkanInfo;
 
     swapChain = new SwapChain(this);
@@ -76,7 +79,7 @@ void ThinDrawer::createInstance()
     const char** glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-#if VK_KHR_portability_enumeration
+#ifdef __APPLE__
     instanceInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
     extensionCount = glfwExtensionCount + 2;
     const char** requiredExtensions = (const char**)malloc(sizeof(const char*) * extensionCount);
@@ -132,10 +135,15 @@ void ThinDrawer::selectPhysicalDevice()
                     physicalDevice = devices[i];
                     queues.graphicsQueueFamilyIndex = j;
                     vkGetPhysicalDeviceProperties(devices[i], &vulkanInfo->deviceProperties);
+                    if (vulkanInfo->deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
+                    {
+                        continue;
+                    }
                     vkGetPhysicalDeviceMemoryProperties(devices[i], &vulkanInfo->deviceMemoryProperties);
 #if PRINT_INFO_MESSAGES 1
                     printf("Selected GPU : %s\n", vulkanInfo->deviceProperties.deviceName);
 #endif
+                    i = deviceCount;
                     break;
                 }
             }

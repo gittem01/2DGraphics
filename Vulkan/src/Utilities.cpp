@@ -3,6 +3,7 @@
 #include <ThinDrawer.h>
 #include <vkInit.h>
 #include <stb_image.h>
+#include <IOHelper.h>
 
 bool ThinDrawer::isDeviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
 {
@@ -152,11 +153,13 @@ VkCommandBuffer ThinDrawer::createCommandBuffer(VkCommandBufferLevel level, VkCo
 
 void ThinDrawer::loadTexture(char* fileName, s_texture* texture)
 {
+    std::string finalPath = IOHelper::assetsFolder + fileName;
+
     int width, height, nChannels;
-    stbi_uc* pixels = stbi_load(fileName, &width, &height, &nChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(finalPath.c_str(), &width, &height, &nChannels, STBI_rgb_alpha);
 
     if (!pixels) {
-        printf("Failed to load texture file: %s\n", fileName);
+        printf("Failed to load texture file: %s\n", finalPath.c_str());
         exit(-1);
     }
 

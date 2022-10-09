@@ -4,7 +4,6 @@
 #include <definitions.h>
 #include <GLFW/glfw3.h>
 #include <string.h>
-#include <cglm/cglm.h>
 #include <vulkan/vulkan.h>
 
 class ThinDrawer;

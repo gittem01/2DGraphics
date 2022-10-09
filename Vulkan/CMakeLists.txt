@@ -16,7 +16,7 @@ message(${sourceFiles})
 
 add_library(vkMines ${headerFiles} ${sourceFiles})
 
-target_link_libraries(VkGraphics2D vkMines glfw cglm)
+target_link_libraries(VkGraphics2D vkMines glfw)
 
 if (APPLE)
 	target_link_libraries(VkGraphics2D vulkan)
