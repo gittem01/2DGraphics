@@ -288,6 +288,7 @@ void ThinDrawer::createRenderPass()
     subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpassDescription.colorAttachmentCount = 1;
     subpassDescription.pColorAttachments = &colorReference;
+
     if (samples > VK_SAMPLE_COUNT_1_BIT)
     {
         subpassDescription.pResolveAttachments = &color_attachment_resolve_ref;

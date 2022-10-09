@@ -210,6 +210,5 @@ void SwapChain::createColorResources()
     imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     imageViewCreateInfo.image = colorImage;
 
-
     CHECK_RESULT_VK(vkCreateImageView(thinDrawer->logicalDevice, &imageViewCreateInfo, NULL, &colorImageView))
 }

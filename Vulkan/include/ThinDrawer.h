@@ -8,7 +8,7 @@
 #include <vector>
 
 #define NUM_FRAMES 2
-#define PRINT_INFO_MESSAGES
+#define PRINT_INFO_MESSAGES 1
 
 static const char* ENABLE_EXTENSIONS[] =
 {

@@ -336,6 +336,8 @@ void ThinDrawer::preparePipelines()
     VkPipelineMultisampleStateCreateInfo multisampleState = { };
     multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampleState.rasterizationSamples = samples;
+    multisampleState.sampleShadingEnable = VK_TRUE;
+    multisampleState.minSampleShading = 1.0f;
 
     VkVertexInputBindingDescription vertexInputBinding = { };
     vertexInputBinding.binding = 0;
@@ -484,14 +486,6 @@ void ThinDrawer::buildCommandBuffers()
         viewport.minDepth = (float)0.0f;
         viewport.maxDepth = (float)1.0f;
         vkCmdSetViewport(drawCommandBuffers[i], 0, 1, &viewport);
-
-        VkRect2D scissor = { };
-        scissor.extent.width = width;
-        scissor.extent.height = height;
-        scissor.offset.x = 0;
-        scissor.offset.y = 0;
-
-        vkCmdSetScissor(drawCommandBuffers[i], 0, 1, &scissor);
 
         vkCmdBindPipeline(drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
