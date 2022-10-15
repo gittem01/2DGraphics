@@ -15,7 +15,8 @@ void ThinDrawer::surfaceRecreate()
 {
     vkDeviceWaitIdle(logicalDevice);
 
-    for (int i = 0; i < swapChain->imageCount; i++) {
+    for (int i = 0; i < swapChain->imageCount; i++)
+    {
         vkDestroyCommandPool(logicalDevice, frames[i].commandPool, VK_NULL_HANDLE);
     }
 
@@ -86,7 +87,8 @@ void ThinDrawer::renderLoop()
     VkResult result = vkAcquireNextImageKHR(logicalDevice, swapChain->swapChain, UINT64_MAX,
                           currentFrame.presentSemaphore, VK_NULL_HANDLE, &lastSwapChainImageIndex);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+    if (result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
         surfaceRecreate();
         return;
     }
@@ -119,7 +121,8 @@ void ThinDrawer::renderLoop()
 
     result = vkQueuePresentKHR(queues.graphicsQueue, &presentInfo);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+    {
         surfaceRecreate();
     }
 
