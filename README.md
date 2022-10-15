@@ -1,2 +1,2 @@
 # 2DGraphics
-2D GL things
+2D Vulkan test playground renderer
