@@ -1,5 +1,6 @@
 #include <SwapChain.h>
 #include <ThinDrawer.h>
+#include <algorithm>
 
 #define MIN(a, b) a > (b) ? (a) : b
 #define MAX(a, b) a < (b) ? (a) : b
@@ -7,6 +8,58 @@
 SwapChain::SwapChain(ThinDrawer* td)
 {
     thinDrawer = td;
+}
+
+void SwapChain::destroy() {
+    for (int i = 0; i < imageCount; i++) {
+        vkDestroyFramebuffer(thinDrawer->logicalDevice, frameBuffers[i], VK_NULL_HANDLE);
+        vkDestroyImageView(thinDrawer->logicalDevice, imageViews[i], VK_NULL_HANDLE);
+    }
+
+    free(frameBuffers);
+    free(imageViews);
+    free(images);
+
+    imageCount = 0;
+
+    vkDestroySwapchainKHR(thinDrawer->logicalDevice, swapChain, VK_NULL_HANDLE);
+    if (thinDrawer->samples > VK_SAMPLE_COUNT_1_BIT) {
+        vkDestroyImageView(thinDrawer->logicalDevice, colorImageView, VK_NULL_HANDLE);
+        vkDestroyImage(thinDrawer->logicalDevice, colorImage, VK_NULL_HANDLE);
+    }
+}
+
+void SwapChain::creationLoop()
+{
+    for (;;) {
+        glfwPollEvents();
+        querySwapChainSupport();
+        extent = chooseSwapExtent();
+        if (extent.width > 0 && extent.height > 0) {
+            createSwapChain();
+            return;
+        }
+    }
+}
+
+VkExtent2D SwapChain::chooseSwapExtent() {
+    if (surfaceCapabilities.currentExtent.width != UINT32_MAX) {
+        return surfaceCapabilities.currentExtent;
+    }
+    else {
+        int width, height;
+        glfwGetFramebufferSize(thinDrawer->window, &width, &height);
+
+        VkExtent2D actualExtent = {
+            static_cast<uint32_t>(width),
+            static_cast<uint32_t>(height)
+        };
+
+        actualExtent.width = std::clamp(actualExtent.width, surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width);
+        actualExtent.height = std::clamp(actualExtent.height, surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
+
+        return actualExtent;
+    }
 }
 
 void SwapChain::querySwapChainSupport()
@@ -32,7 +85,7 @@ void SwapChain::querySwapChainSupport()
     }
 }
 
-void SwapChain::createSwapChain(GLFWwindow* window)
+void SwapChain::createSwapChain()
 {
     querySwapChainSupport();
 
@@ -75,18 +128,7 @@ void SwapChain::createSwapChain(GLFWwindow* window)
         presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
     }
 
-    if (surfaceCapabilities.currentExtent.width != UINT32_MAX)
-    {
-        extent = surfaceCapabilities.currentExtent;
-    }
-    else
-    {
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-
-        extent.width = MIN(MAX(width, surfaceCapabilities.minImageExtent.width), surfaceCapabilities.maxImageExtent.width);
-        extent.height = MIN(MAX(height, surfaceCapabilities.minImageExtent.height), surfaceCapabilities.maxImageExtent.height);
-    }
+    extent = chooseSwapExtent();
 
     imageCount = (int)surfaceCapabilities.minImageCount + 1;
     if (surfaceCapabilities.maxImageCount > 0 && imageCount > surfaceCapabilities.maxImageCount)
@@ -183,8 +225,8 @@ void SwapChain::createColorResources()
 {
     VkExtent3D colorImageExtent =
     {
-            thinDrawer->width,
-            thinDrawer->height,
+            extent.width,
+            extent.height,
             1
     };
 
@@ -195,7 +237,7 @@ void SwapChain::createColorResources()
     colorImageInfo.flags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     colorImageInfo.samples = thinDrawer->samples;
 
-    thinDrawer->createImage(thinDrawer->width, thinDrawer->height, 1, thinDrawer->samples, surfaceFormat.format,
+    thinDrawer->createImage(extent.width, extent.height, 1, thinDrawer->samples, surfaceFormat.format,
                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage, colorImageMemory);
 

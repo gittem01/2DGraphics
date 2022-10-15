@@ -288,6 +288,8 @@ void ThinDrawer::loadTexture(char* fileName, s_texture* texture)
     view.image = texture->image;
 
     CHECK_RESULT_VK(vkCreateImageView(logicalDevice, &view, VK_NULL_HANDLE, &texture->view))
+
+    loadedTextures.push_back(texture);
 }
 
 void ThinDrawer::updateImageDescriptors(s_texture* tex)

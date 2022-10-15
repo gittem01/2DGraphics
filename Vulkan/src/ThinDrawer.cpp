@@ -11,6 +11,56 @@ ThinDrawer::ThinDrawer()
     initExtra();
 }
 
+void ThinDrawer::surfaceRecreate()
+{
+    vkDeviceWaitIdle(logicalDevice);
+
+    for (int i = 0; i < swapChain->imageCount; i++) {
+        vkDestroyCommandPool(logicalDevice, frames[i].commandPool, VK_NULL_HANDLE);
+    }
+
+    vkDestroyPipeline(logicalDevice, pipeline, VK_NULL_HANDLE);
+    vkDestroyPipelineLayout(logicalDevice, pipelineLayout, VK_NULL_HANDLE);
+    vkDestroyRenderPass(logicalDevice, renderPass, VK_NULL_HANDLE);
+
+    vkDestroyDescriptorPool(logicalDevice, descriptorPool, VK_NULL_HANDLE);
+    vkDestroyDescriptorSetLayout(logicalDevice, descriptorSetLayout, VK_NULL_HANDLE);
+    vkDestroyDescriptorSetLayout(logicalDevice, dc_descriptorSetLayout, VK_NULL_HANDLE);
+
+    vkDestroyBuffer(logicalDevice, vertices.buffer, VK_NULL_HANDLE);
+    vkDestroyBuffer(logicalDevice, vertices2.buffer, VK_NULL_HANDLE);
+    vkDestroyBuffer(logicalDevice, indices.buffer, VK_NULL_HANDLE);
+
+    for (int i = 0; i < frames.size(); i++)
+    {
+        vkDestroyFence(logicalDevice, frames[i].renderFence, VK_NULL_HANDLE);
+
+        vkDestroySemaphore(logicalDevice, frames[i].presentSemaphore, VK_NULL_HANDLE);
+        vkDestroySemaphore(logicalDevice, frames[i].renderSemaphore, VK_NULL_HANDLE);
+    }
+
+    swapChain->destroy();
+    swapChain->creationLoop();
+
+    createSyncThings();
+    createCommands();
+    createRenderPass();
+    swapChain->createFrameBuffers();
+
+    prepareVertices();
+    prepareUniformBuffers();
+    setupDescriptorSetLayout();
+    preparePipelines();
+    setupDescriptorPool();
+    for (auto iter = loadedTextures.begin(); iter != loadedTextures.end(); iter++) {
+        updateImageDescriptors(*iter);
+    }
+    setupDescriptorSet();
+    buildCommandBuffers();
+
+    vkDeviceWaitIdle(logicalDevice);
+}
+
 void ThinDrawer::initExtra()
 {
     prepareVertices();
@@ -27,14 +77,19 @@ void ThinDrawer::initExtra()
 
 void ThinDrawer::renderLoop()
 {
-    s_frameData currentFrame = frames[frameNumber % NUM_FRAMES];
+    s_frameData currentFrame = frames[frameNumber % swapChain->imageCount];
 
     CHECK_RESULT_VK(vkWaitForFences(logicalDevice, 1, &currentFrame.renderFence, true, UINT64_MAX))
     CHECK_RESULT_VK(vkResetFences(logicalDevice, 1, &currentFrame.renderFence))
     CHECK_RESULT_VK(vkResetCommandBuffer(currentFrame.commandBuffer, 0))
 
-    vkAcquireNextImageKHR(logicalDevice, swapChain->swapChain, UINT64_MAX,
+    VkResult result = vkAcquireNextImageKHR(logicalDevice, swapChain->swapChain, UINT64_MAX,
                           currentFrame.presentSemaphore, VK_NULL_HANDLE, &lastSwapChainImageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        surfaceRecreate();
+        return;
+    }
 
     VkSubmitInfo submit = { };
     submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -49,7 +104,7 @@ void ThinDrawer::renderLoop()
     submit.pSignalSemaphores = &currentFrame.renderSemaphore;
 
     submit.commandBufferCount = 1;
-    submit.pCommandBuffers = &drawCommandBuffers[frameNumber % drawCommandBuffers.size()];
+    submit.pCommandBuffers = &drawCommandBuffers[lastSwapChainImageIndex % drawCommandBuffers.size()];
 
     CHECK_RESULT_VK(vkQueueSubmit(queues.graphicsQueue, 1, &submit, currentFrame.renderFence))
     VkPresentInfoKHR presentInfo = { };
@@ -62,7 +117,11 @@ void ThinDrawer::renderLoop()
 
     presentInfo.pImageIndices = &lastSwapChainImageIndex;
 
-    vkQueuePresentKHR(queues.graphicsQueue, &presentInfo);
+    result = vkQueuePresentKHR(queues.graphicsQueue, &presentInfo);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        surfaceRecreate();
+    }
 
     frameNumber++;
 }
@@ -320,15 +379,15 @@ void ThinDrawer::preparePipelines()
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 
     VkViewport viewport = { };
-    viewport.width = width;
-    viewport.height = height;
+    viewport.width = swapChain->extent.width;
+    viewport.height = swapChain->extent.height;
 
     viewportState.viewportCount = 1;
     viewportState.pViewports = &viewport;
 
     VkRect2D scissor;
     scissor.offset = { 0, 0 };
-    scissor.extent = { width, height };
+    scissor.extent = swapChain->extent;
 
     viewportState.scissorCount = 1;
     viewportState.pScissors = &scissor;
@@ -470,7 +529,7 @@ void ThinDrawer::buildCommandBuffers()
 
     VkClearValue clearValue;
     clearValue.color = { 0.0f, 0.0f, 0.0f, 0.0f };
-    VkRenderPassBeginInfo renderPassBeginInfo = vkinit::renderPassBeginInfo(renderPass, width, height, &clearValue);
+    VkRenderPassBeginInfo renderPassBeginInfo = vkinit::renderPassBeginInfo(renderPass, swapChain->extent.width, swapChain->extent.height, &clearValue);
 
     for (int32_t i = 0; i < drawCommandBuffers.size(); ++i)
     {
@@ -481,8 +540,8 @@ void ThinDrawer::buildCommandBuffers()
         vkCmdBeginRenderPass(drawCommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         VkViewport viewport = { };
-        viewport.height = (float)height;
-        viewport.width = (float)width;
+        viewport.height = (float)swapChain->extent.height;
+        viewport.width = (float)swapChain->extent.width;
         viewport.minDepth = (float)0.0f;
         viewport.maxDepth = (float)1.0f;
         vkCmdSetViewport(drawCommandBuffers[i], 0, 1, &viewport);

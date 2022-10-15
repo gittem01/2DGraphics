@@ -34,8 +34,13 @@ public:
 
     SwapChain(ThinDrawer* td);
 
+    void destroy();
+
+    VkExtent2D chooseSwapExtent();
     void querySwapChainSupport();
-    void createSwapChain(GLFWwindow* window);
+    void createSwapChain();
     void createFrameBuffers();
     void createColorResources();
+
+    void creationLoop();
 };

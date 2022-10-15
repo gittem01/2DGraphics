@@ -117,7 +117,7 @@ public:
     uint32_t frameNumber = 0;
     uint32_t lastSwapChainImageIndex;
     VkSampleCountFlagBits samples;
-    VkSampleCountFlagBits desiredSamples = VK_SAMPLE_COUNT_4_BIT;
+    VkSampleCountFlagBits desiredSamples = VK_SAMPLE_COUNT_8_BIT;
 
     s_vulkanInfo* vulkanInfo;
     VkInstance instance;
@@ -129,8 +129,8 @@ public:
     VkCommandPool uploadPool;
     VkFence uploadFence;
     GLFWwindow* window;
-    uint32_t width, height;
-    s_frameData frames[NUM_FRAMES];
+
+    std::vector<s_frameData> frames;
     std::vector<VkCommandBuffer> drawCommandBuffers;
 
     VkDescriptorPool descriptorPool;
@@ -154,7 +154,10 @@ public:
     s_uniformBuffer dc_uniformBufferVS;
     s_uniformBuffer dc_uniformBufferFS;
 
+    std::vector<s_texture*> loadedTextures;
     s_texture singleTexture;
+
+    void surfaceRecreate();
 
     void createWindow();
     void initBase();
