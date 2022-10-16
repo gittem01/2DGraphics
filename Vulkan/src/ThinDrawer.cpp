@@ -95,9 +95,9 @@ void ThinDrawer::renderLoop()
 {
     s_frameData currentFrame = frames[frameNumber % swapChain->imageCount];
 
-    CHECK_RESULT_VK(vkWaitForFences(logicalDevice, 1, &currentFrame.renderFence, true, UINT64_MAX))
-    CHECK_RESULT_VK(vkResetFences(logicalDevice, 1, &currentFrame.renderFence))
-    CHECK_RESULT_VK(vkResetCommandBuffer(currentFrame.commandBuffer, 0))
+    CHECK_RESULT_VK(vkWaitForFences(logicalDevice, 1, &currentFrame.renderFence, true, UINT64_MAX));
+    CHECK_RESULT_VK(vkResetFences(logicalDevice, 1, &currentFrame.renderFence));
+    CHECK_RESULT_VK(vkResetCommandBuffer(currentFrame.commandBuffer, 0));
 
     VkResult result = vkAcquireNextImageKHR(logicalDevice, swapChain->swapChain, UINT64_MAX,
                           currentFrame.presentSemaphore, VK_NULL_HANDLE, &lastSwapChainImageIndex);
@@ -123,7 +123,7 @@ void ThinDrawer::renderLoop()
     submit.commandBufferCount = 1;
     submit.pCommandBuffers = &drawCommandBuffers[lastSwapChainImageIndex % drawCommandBuffers.size()];
 
-    CHECK_RESULT_VK(vkQueueSubmit(queues.graphicsQueue, 1, &submit, currentFrame.renderFence))
+    CHECK_RESULT_VK(vkQueueSubmit(queues.graphicsQueue, 1, &submit, currentFrame.renderFence));
     VkPresentInfoKHR presentInfo = { };
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.pSwapchains = &swapChain->swapChain;
@@ -178,25 +178,25 @@ void ThinDrawer::prepareVertices()
 
         VkBufferCreateInfo vertexBufferInfo = vkinit::bufferCreateInfo(dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 
-        CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &vertexBufferInfo, VK_NULL_HANDLE, &stagingBuffer.buffer))
+        CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &vertexBufferInfo, VK_NULL_HANDLE, &stagingBuffer.buffer));
         vkGetBufferMemoryRequirements(logicalDevice, stagingBuffer.buffer, &memReqs);
         memAlloc.allocationSize = memReqs.size;
         memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                                               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &memAlloc, VK_NULL_HANDLE, &stagingBuffer.memory))
+        CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &memAlloc, VK_NULL_HANDLE, &stagingBuffer.memory));
 
-        CHECK_RESULT_VK(vkMapMemory(logicalDevice, stagingBuffer.memory, 0, memAlloc.allocationSize, 0, &data))
+        CHECK_RESULT_VK(vkMapMemory(logicalDevice, stagingBuffer.memory, 0, memAlloc.allocationSize, 0, &data));
         memcpy(data, bufferData, dataSize);
         vkUnmapMemory(logicalDevice, stagingBuffer.memory);
-        CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, stagingBuffer.buffer, stagingBuffer.memory, 0))
+        CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, stagingBuffer.buffer, stagingBuffer.memory, 0));
 
         vertexBufferInfo.usage = flags;
-        CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &vertexBufferInfo, VK_NULL_HANDLE, &fillBuffer.buffer))
+        CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &vertexBufferInfo, VK_NULL_HANDLE, &fillBuffer.buffer));
         vkGetBufferMemoryRequirements(logicalDevice, fillBuffer.buffer, &memReqs);
         memAlloc.allocationSize = memReqs.size;
         memAlloc.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &memAlloc, VK_NULL_HANDLE, &fillBuffer.memory))
-        CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, fillBuffer.buffer, fillBuffer.memory, 0))
+        CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &memAlloc, VK_NULL_HANDLE, &fillBuffer.memory));
+        CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, fillBuffer.buffer, fillBuffer.memory, 0));
     };
 
     s_stagingBuffer vertexBuffers;
@@ -233,23 +233,28 @@ void ThinDrawer::prepareVertices()
     vkFreeMemory(logicalDevice, indexBuffers.memory, VK_NULL_HANDLE);
 }
 
-void ThinDrawer::prepareUniformBuffers()
+void ThinDrawer::uniformHelper(int size, s_uniformBuffer* uniformBuffer)
 {
-    VkBufferCreateInfo bufferInfo = vkinit::bufferCreateInfo(sizeof(s_uboVS), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-    CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &bufferInfo, VK_NULL_HANDLE, &uniformBufferVS.buffer))
+    VkBufferCreateInfo bufferInfo = vkinit::bufferCreateInfo(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+    CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &bufferInfo, VK_NULL_HANDLE, &uniformBuffer->buffer));
 
     VkMemoryRequirements memReqs;
     VkMemoryAllocateInfo allocInfo = vkinit::memoryAllocateInfo();
-    vkGetBufferMemoryRequirements(logicalDevice, uniformBufferVS.buffer, &memReqs);
+    vkGetBufferMemoryRequirements(logicalDevice, uniformBuffer->buffer, &memReqs);
     allocInfo.allocationSize = memReqs.size;
     allocInfo.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits,
-                                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &allocInfo, VK_NULL_HANDLE, &uniformBufferVS.memory))
-    CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, uniformBufferVS.buffer, uniformBufferVS.memory, 0))
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &allocInfo, VK_NULL_HANDLE, &uniformBuffer->memory));
+    CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, uniformBuffer->buffer, uniformBuffer->memory, 0));
 
-    uniformBufferVS.descriptor.buffer = uniformBufferVS.buffer;
-    uniformBufferVS.descriptor.offset = 0;
-    uniformBufferVS.descriptor.range = sizeof(s_uboVS);
+    uniformBuffer->descriptor.buffer = uniformBuffer->buffer;
+    uniformBuffer->descriptor.offset = 0;
+    uniformBuffer->descriptor.range = size;
+}
+
+void ThinDrawer::prepareUniformBuffers()
+{
+    uniformHelper(sizeof(s_uboVS), &uniformBufferVS);
 
     s_uboVS uboVS;
 
@@ -259,59 +264,35 @@ void ThinDrawer::prepareUniformBuffers()
     uboVS.modelMatrix = glm::scale(uboVS.modelMatrix, glm::vec3(2.5f, 1.0f, 1.0f));
 
     uint8_t *pData;
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferVS.memory, 0, sizeof(uboVS), 0, (void**)&pData))
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferVS.memory, 0, sizeof(uboVS), 0, (void**)&pData));
     memcpy(pData, &uboVS, sizeof(uboVS));
 
     vkUnmapMemory(logicalDevice, uniformBufferVS.memory);
 
+    uniformHelper(sizeof(int), &uniformBufferFS);
+
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferFS.memory, 0, sizeof(int), 0, (void**)&pData));
+    int val = 1;
+    memcpy(pData, &val, sizeof(int));
+
+    vkUnmapMemory(logicalDevice, uniformBufferFS.memory);
+
     // for debug circle
 
-    bufferInfo = vkinit::bufferCreateInfo(sizeof(s_uboVS), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-    CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &bufferInfo, VK_NULL_HANDLE, &dc_uniformBufferVS.buffer))
-
-    vkGetBufferMemoryRequirements(logicalDevice, dc_uniformBufferVS.buffer, &memReqs);
-    allocInfo.allocationSize = memReqs.size;
-    allocInfo.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits,
-                                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &allocInfo, VK_NULL_HANDLE, &dc_uniformBufferVS.memory))
-    CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, dc_uniformBufferVS.buffer, dc_uniformBufferVS.memory, 0))
-
-    dc_uniformBufferVS.descriptor.buffer = dc_uniformBufferVS.buffer;
-    dc_uniformBufferVS.descriptor.offset = 0;
-    dc_uniformBufferVS.descriptor.range = sizeof(s_uboVS);
+    uniformHelper(sizeof(s_uboVS), &dc_uniformBufferVS);
 
     uboVS.modelMatrix = glm::mat4(1.0f);
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, dc_uniformBufferVS.memory, 0, sizeof(uboVS), 0, (void **)&pData))
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, dc_uniformBufferVS.memory, 0, sizeof(uboVS), 0, (void**)&pData));
     memcpy(pData, &uboVS, sizeof(uboVS));
 
     vkUnmapMemory(logicalDevice, dc_uniformBufferVS.memory);
 
-    bufferInfo = vkinit::bufferCreateInfo(sizeof(s_uboFSColor), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-    CHECK_RESULT_VK(vkCreateBuffer(logicalDevice, &bufferInfo, VK_NULL_HANDLE, &dc_uniformBufferFS.buffer))
-
-    vkGetBufferMemoryRequirements(logicalDevice, uniformBufferVS.buffer, &memReqs);
-    allocInfo.allocationSize = memReqs.size;
-    allocInfo.memoryTypeIndex = getMemoryTypeIndex(memReqs.memoryTypeBits,
-                                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    CHECK_RESULT_VK(vkAllocateMemory(logicalDevice, &allocInfo, VK_NULL_HANDLE, &dc_uniformBufferFS.memory))
-    CHECK_RESULT_VK(vkBindBufferMemory(logicalDevice, dc_uniformBufferFS.buffer, dc_uniformBufferFS.memory, 0))
-
-    dc_uniformBufferFS.descriptor.buffer = dc_uniformBufferFS.buffer;
-    dc_uniformBufferFS.descriptor.offset = 0;
-    dc_uniformBufferFS.descriptor.range = sizeof(s_uboFSColor);
-
-    uboVS.modelMatrix = glm::mat4(1.0f);
-    uboVS.modelMatrix = glm::scale(uboVS.modelMatrix, glm::vec3(0.5f, 0.5f, 0.5f));
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, dc_uniformBufferFS.memory, 0, sizeof(uboVS), 0, (void **)&pData))
-    memcpy(pData, &uboVS, sizeof(uboVS));
-
-    vkUnmapMemory(logicalDevice, dc_uniformBufferFS.memory);
+    uniformHelper(sizeof(s_uboFSColor), &dc_uniformBufferFS);
 
     s_uboFSColor uboFSColor;
-
     uboFSColor.color = glm::vec4(0.2f, 1.0f, 1.0f, 0.6f);
 
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, dc_uniformBufferFS.memory, 0, sizeof(uboFSColor), 0, (void **)&pData))
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, dc_uniformBufferFS.memory, 0, sizeof(uboFSColor), 0, (void**)&pData));
     memcpy(pData, &uboFSColor, sizeof(uboFSColor));
 
     vkUnmapMemory(logicalDevice, dc_uniformBufferFS.memory);
@@ -322,35 +303,37 @@ void ThinDrawer::setupDescriptorSetLayout()
     VkDescriptorSetLayoutBinding layoutBinding =
             vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1, 0);
 
-    VkDescriptorSetLayoutCreateInfo descriptorLayout = vkinit::descriptorSetLayoutCreateInfo(&layoutBinding, 1);
-    CHECK_RESULT_VK(vkCreateDescriptorSetLayout(logicalDevice, &descriptorLayout, VK_NULL_HANDLE, &descriptorSetLayout))
+    VkDescriptorSetLayoutBinding layoutBinding2 = 
+            vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
 
-    VkDescriptorSetLayoutBinding textureBind =
-            vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,
-                                               1, 0);
+    VkDescriptorSetLayoutBinding bindings[] = { layoutBinding, layoutBinding2 };
+
+    VkDescriptorSetLayoutCreateInfo descriptorLayout = vkinit::descriptorSetLayoutCreateInfo(bindings, sizeof(bindings) / sizeof(bindings[0]));
+    CHECK_RESULT_VK(vkCreateDescriptorSetLayout(logicalDevice, &descriptorLayout, VK_NULL_HANDLE, &descriptorSetLayout));
+
+    VkDescriptorSetLayoutBinding textureBind = vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0);
 
     VkDescriptorSetLayoutCreateInfo setInfo = vkinit::descriptorSetLayoutCreateInfo(&textureBind, 1);
-    CHECK_RESULT_VK(vkCreateDescriptorSetLayout(logicalDevice, &setInfo, VK_NULL_HANDLE, &textureSetLayout))
+    CHECK_RESULT_VK(vkCreateDescriptorSetLayout(logicalDevice, &setInfo, VK_NULL_HANDLE, &textureSetLayout));
 
     VkDescriptorSetLayout setLayouts[] = { descriptorSetLayout, textureSetLayout };
 
     VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = vkinit::pipelineLayoutCreateInfo(
             setLayouts, sizeof(setLayouts) / sizeof(setLayouts[0]));
-    CHECK_RESULT_VK(vkCreatePipelineLayout(logicalDevice, &pPipelineLayoutCreateInfo, VK_NULL_HANDLE, &pipelineLayout))
+    CHECK_RESULT_VK(vkCreatePipelineLayout(logicalDevice, &pPipelineLayoutCreateInfo, VK_NULL_HANDLE, &pipelineLayout));
 
     //for  debug circle
 
-    VkDescriptorSetLayoutBinding layoutBinding2 = vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                                                     VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
+    layoutBinding2 = vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
 
-    VkDescriptorSetLayoutBinding bindings[] = { layoutBinding, layoutBinding2 };
+    VkDescriptorSetLayoutBinding bindings1[] = { layoutBinding, layoutBinding2 };
 
-    descriptorLayout = vkinit::descriptorSetLayoutCreateInfo(bindings, sizeof(bindings) / sizeof(bindings[0]));
-    CHECK_RESULT_VK(vkCreateDescriptorSetLayout(logicalDevice, &descriptorLayout, VK_NULL_HANDLE, &dc_descriptorSetLayout))
+    descriptorLayout = vkinit::descriptorSetLayoutCreateInfo(bindings1, sizeof(bindings1) / sizeof(bindings1[0]));
+    CHECK_RESULT_VK(vkCreateDescriptorSetLayout(logicalDevice, &descriptorLayout, VK_NULL_HANDLE, &dc_descriptorSetLayout));
 
     VkDescriptorSetLayout setLayouts2[] = { dc_descriptorSetLayout };
     pPipelineLayoutCreateInfo = vkinit::pipelineLayoutCreateInfo(setLayouts2, sizeof(setLayouts2) / sizeof(setLayouts2[0]));
-    CHECK_RESULT_VK(vkCreatePipelineLayout(logicalDevice, &pPipelineLayoutCreateInfo, VK_NULL_HANDLE, &dc_pipelineLayout))
+    CHECK_RESULT_VK(vkCreatePipelineLayout(logicalDevice, &pPipelineLayoutCreateInfo, VK_NULL_HANDLE, &dc_pipelineLayout));
 }
 
 void ThinDrawer::preparePipelines()
@@ -461,7 +444,7 @@ void ThinDrawer::preparePipelines()
     pipelineCreateInfo.pDepthStencilState = VK_NULL_HANDLE;
     pipelineCreateInfo.pDynamicState = VK_NULL_HANDLE;
 
-    CHECK_RESULT_VK(vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, VK_NULL_HANDLE, &pipeline))
+    CHECK_RESULT_VK(vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, VK_NULL_HANDLE, &pipeline));
 
     // for debug circle
 
@@ -483,7 +466,7 @@ void ThinDrawer::preparePipelines()
     pipelineCreateInfo.stageCount = shader2.shaderStages.size();
     pipelineCreateInfo.pStages = shader2.shaderStages.data();
 
-    CHECK_RESULT_VK(vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, VK_NULL_HANDLE, &dc_pipeline))
+    CHECK_RESULT_VK(vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, VK_NULL_HANDLE, &dc_pipeline));
 }
 
 void ThinDrawer::setupDescriptorPool()
@@ -503,14 +486,14 @@ void ThinDrawer::setupDescriptorPool()
     descriptorPoolInfo.pPoolSizes = sizes.data();
     descriptorPoolInfo.maxSets = 10;
 
-    CHECK_RESULT_VK(vkCreateDescriptorPool(logicalDevice, &descriptorPoolInfo, VK_NULL_HANDLE, &descriptorPool))
+    CHECK_RESULT_VK(vkCreateDescriptorPool(logicalDevice, &descriptorPoolInfo, VK_NULL_HANDLE, &descriptorPool));
 }
 
 void ThinDrawer::setupDescriptorSet()
 {
     VkDescriptorSetAllocateInfo allocInfo = vkinit::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayout, 1);
 
-    CHECK_RESULT_VK(vkAllocateDescriptorSets(logicalDevice, &allocInfo, &descriptorSet))
+    CHECK_RESULT_VK(vkAllocateDescriptorSets(logicalDevice, &allocInfo, &descriptorSet));
 
     VkWriteDescriptorSet writeDescriptorSet = { };
 
@@ -523,13 +506,18 @@ void ThinDrawer::setupDescriptorSet()
 
     vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
 
+    writeDescriptorSet.pBufferInfo = &uniformBufferFS.descriptor;
+    writeDescriptorSet.dstBinding = 1;
+
+    vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
+
     updateImageDescriptors(&singleTexture);
 
     // for debug circle
 
     allocInfo = vkinit::descriptorSetAllocateInfo(descriptorPool, &dc_descriptorSetLayout, 1);
 
-    CHECK_RESULT_VK(vkAllocateDescriptorSets(logicalDevice, &allocInfo, &dc_descriptorSet))
+    CHECK_RESULT_VK(vkAllocateDescriptorSets(logicalDevice, &allocInfo, &dc_descriptorSet));
 
     writeDescriptorSet.dstSet = dc_descriptorSet;
     writeDescriptorSet.pBufferInfo = &dc_uniformBufferVS.descriptor;
@@ -553,7 +541,7 @@ void ThinDrawer::buildCommandBuffers()
     {
         renderPassBeginInfo.framebuffer = swapChain->frameBuffers[i];
 
-        CHECK_RESULT_VK(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo))
+        CHECK_RESULT_VK(vkBeginCommandBuffer(drawCommandBuffers[i], &cmdBufInfo));
 
         vkCmdBeginRenderPass(drawCommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -589,6 +577,6 @@ void ThinDrawer::buildCommandBuffers()
         vkCmdDrawIndexed(drawCommandBuffers[i], indices.count, 1, 0, 0, 1);
 
         vkCmdEndRenderPass(drawCommandBuffers[i]);
-        CHECK_RESULT_VK(vkEndCommandBuffer(drawCommandBuffers[i]))
+        CHECK_RESULT_VK(vkEndCommandBuffer(drawCommandBuffers[i]));
     }
 }

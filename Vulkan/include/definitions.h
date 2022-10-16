@@ -146,4 +146,4 @@ static void printVkError(VkResult error)
         assert(false);              \
         exit(1);                    \
     }                               \
-}
+} 0

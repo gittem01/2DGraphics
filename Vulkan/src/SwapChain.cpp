@@ -156,7 +156,7 @@ void SwapChain::createSwapChain()
     swapChainCreateInfo.presentMode = presentMode;
     swapChainCreateInfo.clipped = VK_TRUE;
 
-    CHECK_RESULT_VK(vkCreateSwapchainKHR(thinDrawer->logicalDevice, &swapChainCreateInfo, NULL, &swapChain))
+    CHECK_RESULT_VK(vkCreateSwapchainKHR(thinDrawer->logicalDevice, &swapChainCreateInfo, NULL, &swapChain));
 
     vkGetSwapchainImagesKHR(thinDrawer->logicalDevice, swapChain,
         (uint32_t*)&imageCount, NULL);
@@ -182,7 +182,7 @@ void SwapChain::createSwapChain()
         createInfo.subresourceRange.baseArrayLayer = 0;
         createInfo.subresourceRange.layerCount = 1;
 
-        CHECK_RESULT_VK(vkCreateImageView(thinDrawer->logicalDevice, &createInfo, NULL, &imageViews[i]))
+        CHECK_RESULT_VK(vkCreateImageView(thinDrawer->logicalDevice, &createInfo, NULL, &imageViews[i]));
     }
 
     if (thinDrawer->samples > VK_SAMPLE_COUNT_1_BIT)
@@ -217,7 +217,7 @@ void SwapChain::createFrameBuffers()
 		frameBufferInfo.attachmentCount = attachments.size();
 		frameBufferInfo.pAttachments = attachments.data();
 
-        CHECK_RESULT_VK(vkCreateFramebuffer(thinDrawer->logicalDevice, &frameBufferInfo, NULL, frameBuffers + i))
+        CHECK_RESULT_VK(vkCreateFramebuffer(thinDrawer->logicalDevice, &frameBufferInfo, NULL, frameBuffers + i));
 	}
 }
 
@@ -252,5 +252,5 @@ void SwapChain::createColorResources()
     imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     imageViewCreateInfo.image = colorImage;
 
-    CHECK_RESULT_VK(vkCreateImageView(thinDrawer->logicalDevice, &imageViewCreateInfo, NULL, &colorImageView))
+    CHECK_RESULT_VK(vkCreateImageView(thinDrawer->logicalDevice, &imageViewCreateInfo, NULL, &colorImageView));
 }

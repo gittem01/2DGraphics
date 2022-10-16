@@ -54,7 +54,7 @@ VkShaderModule Shader::load_shader_module(VkDevice device, const char* filePath)
     createInfo.pCode = buffer.data();
 
     VkShaderModule shaderModule;
-    CHECK_RESULT_VK(vkCreateShaderModule(device, &createInfo, NULL, &shaderModule))
+    CHECK_RESULT_VK(vkCreateShaderModule(device, &createInfo, NULL, &shaderModule));
 
     return shaderModule;
 }

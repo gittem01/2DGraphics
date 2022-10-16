@@ -149,6 +149,7 @@ public:
     s_buffers vertices;
     s_buffers indices;
     s_uniformBuffer uniformBufferVS;
+    s_uniformBuffer uniformBufferFS;
 
     s_buffers vertices2;
     s_uniformBuffer dc_uniformBufferVS;
@@ -178,6 +179,8 @@ public:
     void buildCommandBuffers();
 
     void renderLoop();
+
+    void uniformHelper(int size, s_uniformBuffer* uniformBuffer);
 
     VkCommandBuffer getCommandBuffer(bool begin);
     void flushCommandBuffer(VkCommandBuffer commandBuffer);

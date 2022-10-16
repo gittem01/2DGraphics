@@ -42,7 +42,7 @@ void ThinDrawer::initBase()
 
     createInstance();
 
-    CHECK_RESULT_VK(glfwCreateWindowSurface(instance, window, NULL, &swapChain->surface))
+    CHECK_RESULT_VK(glfwCreateWindowSurface(instance, window, NULL, &swapChain->surface));
 
     selectPhysicalDevice();
 
@@ -97,7 +97,7 @@ void ThinDrawer::createInstance()
     instanceInfo.enabledExtensionCount = extensionCount;
     instanceInfo.ppEnabledExtensionNames = requiredExtensions;
 
-    CHECK_RESULT_VK(vkCreateInstance(&instanceInfo, nullptr, &instance))
+    CHECK_RESULT_VK(vkCreateInstance(&instanceInfo, nullptr, &instance));
 
     free(requiredExtensions);
 }
@@ -212,7 +212,7 @@ void ThinDrawer::createLogicalDevice()
     deviceCreateInfo.enabledExtensionCount = extensionCount;
     deviceCreateInfo.ppEnabledExtensionNames = enabledExtensions;
 
-    CHECK_RESULT_VK(vkCreateDevice(physicalDevice, &deviceCreateInfo, NULL, &logicalDevice))
+    CHECK_RESULT_VK(vkCreateDevice(physicalDevice, &deviceCreateInfo, NULL, &logicalDevice));
 
     vkGetDeviceQueue(logicalDevice, queues.graphicsQueueFamilyIndex, 0, &queues.graphicsQueue);
 
@@ -306,7 +306,7 @@ void ThinDrawer::createRenderPass()
     renderPassInfo.pSubpasses = &subpassDescription;
     renderPassInfo.dependencyCount = 0;
 
-    CHECK_RESULT_VK(vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &renderPass))
+    CHECK_RESULT_VK(vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &renderPass));
 }
 
 void ThinDrawer::createCommands()
@@ -314,13 +314,13 @@ void ThinDrawer::createCommands()
     VkCommandPoolCreateInfo commandCreateInfo = { };
     commandCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     commandCreateInfo.queueFamilyIndex = queues.graphicsQueueFamilyIndex;
-    CHECK_RESULT_VK(vkCreateCommandPool(logicalDevice, &commandCreateInfo, nullptr, &uploadPool))
+    CHECK_RESULT_VK(vkCreateCommandPool(logicalDevice, &commandCreateInfo, nullptr, &uploadPool));
 
     commandCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
     for (int i = 0; i < frames.size(); i++)
     {
-        CHECK_RESULT_VK(vkCreateCommandPool(logicalDevice, &commandCreateInfo, nullptr, &frames[i].commandPool))
+        CHECK_RESULT_VK(vkCreateCommandPool(logicalDevice, &commandCreateInfo, nullptr, &frames[i].commandPool));
 
         VkCommandBufferAllocateInfo cmdAllocInfo = { };
         cmdAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -328,7 +328,7 @@ void ThinDrawer::createCommands()
         cmdAllocInfo.commandBufferCount = 1;
         cmdAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 
-        CHECK_RESULT_VK(vkAllocateCommandBuffers(logicalDevice, &cmdAllocInfo, &frames[i].commandBuffer))
+        CHECK_RESULT_VK(vkAllocateCommandBuffers(logicalDevice, &cmdAllocInfo, &frames[i].commandBuffer));
     }
 
     drawCommandBuffers.resize(swapChain->imageCount);
@@ -337,7 +337,7 @@ void ThinDrawer::createCommands()
     cmdBufAllocateInfo.commandBufferCount = drawCommandBuffers.size();
     cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     cmdBufAllocateInfo.commandPool = frames[0].commandPool;
-    CHECK_RESULT_VK(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, drawCommandBuffers.data()))
+    CHECK_RESULT_VK(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, drawCommandBuffers.data()));
 }
 
 void ThinDrawer::createSyncThings()
@@ -351,12 +351,12 @@ void ThinDrawer::createSyncThings()
 
     for (int i = 0; i < frames.size(); i++)
     {
-        CHECK_RESULT_VK(vkCreateFence(logicalDevice, &fenceCreateInfo, VK_NULL_HANDLE, &frames[i].renderFence))
+        CHECK_RESULT_VK(vkCreateFence(logicalDevice, &fenceCreateInfo, VK_NULL_HANDLE, &frames[i].renderFence));
 
-        CHECK_RESULT_VK(vkCreateSemaphore(logicalDevice, &semaphoreCreateInfo, VK_NULL_HANDLE, &frames[i].presentSemaphore))
-        CHECK_RESULT_VK(vkCreateSemaphore(logicalDevice, &semaphoreCreateInfo, VK_NULL_HANDLE, &frames[i].renderSemaphore))
+        CHECK_RESULT_VK(vkCreateSemaphore(logicalDevice, &semaphoreCreateInfo, VK_NULL_HANDLE, &frames[i].presentSemaphore));
+        CHECK_RESULT_VK(vkCreateSemaphore(logicalDevice, &semaphoreCreateInfo, VK_NULL_HANDLE, &frames[i].renderSemaphore));
     }
 
     fenceCreateInfo.flags = 0;
-    CHECK_RESULT_VK(vkCreateFence(logicalDevice, &fenceCreateInfo, VK_NULL_HANDLE, &uploadFence))
+    CHECK_RESULT_VK(vkCreateFence(logicalDevice, &fenceCreateInfo, VK_NULL_HANDLE, &uploadFence));
 }
