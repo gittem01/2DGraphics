@@ -20,11 +20,11 @@ void SwapChain::destroy() {
     free(imageViews);
     free(images);
 
-    imageCount = 0;
-
     vkDestroySwapchainKHR(thinDrawer->logicalDevice, swapChain, VK_NULL_HANDLE);
+
     if (thinDrawer->samples > VK_SAMPLE_COUNT_1_BIT) {
         vkDestroyImageView(thinDrawer->logicalDevice, colorImageView, VK_NULL_HANDLE);
+        vkFreeMemory(thinDrawer->logicalDevice, colorImageMemory, VK_NULL_HANDLE);
         vkDestroyImage(thinDrawer->logicalDevice, colorImage, VK_NULL_HANDLE);
     }
 }

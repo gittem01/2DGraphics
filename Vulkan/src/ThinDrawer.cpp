@@ -15,29 +15,42 @@ void ThinDrawer::surfaceRecreate()
 {
     vkDeviceWaitIdle(logicalDevice);
 
-    for (int i = 0; i < swapChain->imageCount; i++)
-    {
-        vkDestroyCommandPool(logicalDevice, frames[i].commandPool, VK_NULL_HANDLE);
-    }
-
     vkDestroyPipeline(logicalDevice, pipeline, VK_NULL_HANDLE);
+    vkDestroyPipeline(logicalDevice, dc_pipeline, VK_NULL_HANDLE);
     vkDestroyPipelineLayout(logicalDevice, pipelineLayout, VK_NULL_HANDLE);
+    vkDestroyPipelineLayout(logicalDevice, dc_pipelineLayout, VK_NULL_HANDLE);
     vkDestroyRenderPass(logicalDevice, renderPass, VK_NULL_HANDLE);
 
     vkDestroyDescriptorPool(logicalDevice, descriptorPool, VK_NULL_HANDLE);
     vkDestroyDescriptorSetLayout(logicalDevice, descriptorSetLayout, VK_NULL_HANDLE);
     vkDestroyDescriptorSetLayout(logicalDevice, dc_descriptorSetLayout, VK_NULL_HANDLE);
+    vkDestroyDescriptorSetLayout(logicalDevice, textureSetLayout, VK_NULL_HANDLE);
+
+    vkFreeMemory(logicalDevice, vertices.memory, VK_NULL_HANDLE);
+    vkFreeMemory(logicalDevice, vertices2.memory, VK_NULL_HANDLE);
+    vkFreeMemory(logicalDevice, indices.memory, VK_NULL_HANDLE);
 
     vkDestroyBuffer(logicalDevice, vertices.buffer, VK_NULL_HANDLE);
     vkDestroyBuffer(logicalDevice, vertices2.buffer, VK_NULL_HANDLE);
     vkDestroyBuffer(logicalDevice, indices.buffer, VK_NULL_HANDLE);
 
+    vkFreeMemory(logicalDevice, uniformBufferVS.memory, VK_NULL_HANDLE);
+    vkFreeMemory(logicalDevice, dc_uniformBufferVS.memory, VK_NULL_HANDLE);
+    vkFreeMemory(logicalDevice, dc_uniformBufferFS.memory, VK_NULL_HANDLE);
+
+    vkDestroyBuffer(logicalDevice, uniformBufferVS.buffer, VK_NULL_HANDLE);
+    vkDestroyBuffer(logicalDevice, dc_uniformBufferVS.buffer, VK_NULL_HANDLE);
+    vkDestroyBuffer(logicalDevice, dc_uniformBufferFS.buffer, VK_NULL_HANDLE);
+
+    vkDestroyFence(logicalDevice, uploadFence, VK_NULL_HANDLE);
     for (int i = 0; i < frames.size(); i++)
     {
         vkDestroyFence(logicalDevice, frames[i].renderFence, VK_NULL_HANDLE);
 
         vkDestroySemaphore(logicalDevice, frames[i].presentSemaphore, VK_NULL_HANDLE);
         vkDestroySemaphore(logicalDevice, frames[i].renderSemaphore, VK_NULL_HANDLE);
+
+        vkDestroyCommandPool(logicalDevice, frames[i].commandPool, VK_NULL_HANDLE);
     }
 
     swapChain->destroy();
@@ -53,8 +66,10 @@ void ThinDrawer::surfaceRecreate()
     setupDescriptorSetLayout();
     preparePipelines();
     setupDescriptorPool();
-    for (auto iter = loadedTextures.begin(); iter != loadedTextures.end(); iter++) {
-        updateImageDescriptors(*iter);
+    for (auto iter = loadedTextures.begin(); iter != loadedTextures.end(); iter++)
+    {
+        s_texture* tex = *iter;
+        updateImageDescriptors(tex);
     }
     setupDescriptorSet();
     buildCommandBuffers();
@@ -244,7 +259,7 @@ void ThinDrawer::prepareUniformBuffers()
     uboVS.modelMatrix = glm::scale(uboVS.modelMatrix, glm::vec3(2.5f, 1.0f, 1.0f));
 
     uint8_t *pData;
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferVS.memory, 0, sizeof(uboVS), 0, (void **)&pData))
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferVS.memory, 0, sizeof(uboVS), 0, (void**)&pData))
     memcpy(pData, &uboVS, sizeof(uboVS));
 
     vkUnmapMemory(logicalDevice, uniformBufferVS.memory);
