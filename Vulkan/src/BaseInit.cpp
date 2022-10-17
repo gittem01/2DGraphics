@@ -137,12 +137,12 @@ void ThinDrawer::selectPhysicalDevice()
                     physicalDevice = devices[i];
                     queues.graphicsQueueFamilyIndex = j;
                     vkGetPhysicalDeviceProperties(devices[i], &vulkanInfo->deviceProperties);
-                    if (vulkanInfo->deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
+                    if (vulkanInfo->deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU && deviceCount > 1)
                     {
                         continue;
                     }
                     vkGetPhysicalDeviceMemoryProperties(devices[i], &vulkanInfo->deviceMemoryProperties);
-#if PRINT_INFO_MESSAGES 1
+#if PRINT_INFO_MESSAGES
                     printf("Selected GPU : %s\n", vulkanInfo->deviceProperties.deviceName);
 #endif
                     i = deviceCount;
