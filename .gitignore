@@ -25,6 +25,7 @@
 *.app
 
 # Mines
+compDir.save
 .vscode
 .vs
 *build*
