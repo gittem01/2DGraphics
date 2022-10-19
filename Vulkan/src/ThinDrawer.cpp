@@ -259,22 +259,26 @@ void ThinDrawer::prepareUniformBuffers()
     s_uboVS uboVS;
 
     uboVS.orthoMatrix = glm::ortho(-4.0f, +4.0f, -2.25f, +2.25f, -100.0f, 100.0f);
+    uboVS.orthoMatrix[1][1] *= -1;
     uboVS.modelMatrix = glm::mat4(1.0f);
     uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix, glm::pi<float>() * 0.25f, glm::vec3(0, 0, 1));
     uboVS.modelMatrix = glm::scale(uboVS.modelMatrix, glm::vec3(2.5f, 1.0f, 1.0f));
 
     uint8_t *pData;
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferVS.memory, 0, sizeof(uboVS), 0, (void**)&pData));
-    memcpy(pData, &uboVS, sizeof(uboVS));
-
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferVS.memory, 0, sizeof(s_uboVS), 0, (void**)&pData));
+    memcpy(pData, &uboVS, sizeof(s_uboVS));
     vkUnmapMemory(logicalDevice, uniformBufferVS.memory);
 
+    glm::vec4 vec[2] = { glm::vec4(-1.0f, 1.0f, 1.0f, 1.0f), glm::vec4(1.0f, -1.0f, -1.0f, -1.0f) };
+    uniformHelper(sizeof(vec), &uniformBufferFS2);
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferFS2.memory, 0, sizeof(vec), 0, (void**)&pData));
+    memcpy(pData, &vec, sizeof(vec));
+    vkUnmapMemory(logicalDevice, uniformBufferFS2.memory);
+
     uniformHelper(sizeof(int), &uniformBufferFS);
-
     CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferFS.memory, 0, sizeof(int), 0, (void**)&pData));
-    int val = 1;
+    int val = sizeof(vec) / sizeof(glm::vec4);
     memcpy(pData, &val, sizeof(int));
-
     vkUnmapMemory(logicalDevice, uniformBufferFS.memory);
 
     // for debug circle
@@ -306,7 +310,10 @@ void ThinDrawer::setupDescriptorSetLayout()
     VkDescriptorSetLayoutBinding layoutBinding2 = 
             vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
 
-    VkDescriptorSetLayoutBinding bindings[] = { layoutBinding, layoutBinding2 };
+    VkDescriptorSetLayoutBinding layoutBinding3 =
+        vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 2);
+
+    VkDescriptorSetLayoutBinding bindings[] = { layoutBinding, layoutBinding2, layoutBinding3 };
 
     VkDescriptorSetLayoutCreateInfo descriptorLayout = vkinit::descriptorSetLayoutCreateInfo(bindings, sizeof(bindings) / sizeof(bindings[0]));
     CHECK_RESULT_VK(vkCreateDescriptorSetLayout(logicalDevice, &descriptorLayout, VK_NULL_HANDLE, &descriptorSetLayout));
@@ -508,6 +515,11 @@ void ThinDrawer::setupDescriptorSet()
 
     writeDescriptorSet.pBufferInfo = &uniformBufferFS.descriptor;
     writeDescriptorSet.dstBinding = 1;
+
+    vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
+
+    writeDescriptorSet.pBufferInfo = &uniformBufferFS2.descriptor;
+    writeDescriptorSet.dstBinding = 2;
 
     vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
 

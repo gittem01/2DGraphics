@@ -150,6 +150,7 @@ public:
     s_buffers indices;
     s_uniformBuffer uniformBufferVS;
     s_uniformBuffer uniformBufferFS;
+    s_uniformBuffer uniformBufferFS2;
 
     s_buffers vertices2;
     s_uniformBuffer dc_uniformBufferVS;
