@@ -292,9 +292,9 @@ void ThinDrawer::loadTexture(char* fileName, s_texture* texture)
     loadedTextures.push_back(texture);
 }
 
-void ThinDrawer::updateImageDescriptors(s_texture* tex)
+void ThinDrawer::updateImageDescriptors(s_texture* tex, VkDescriptorSetLayout& setLayout)
 {
-    VkDescriptorSetAllocateInfo allocInfo = vkinit::descriptorSetAllocateInfo(descriptorPool, &textureSetLayout, 1);
+    VkDescriptorSetAllocateInfo allocInfo = vkinit::descriptorSetAllocateInfo(descriptorPool, &setLayout, 1);
 
     vkAllocateDescriptorSets(logicalDevice, &allocInfo, &tex->set);
 

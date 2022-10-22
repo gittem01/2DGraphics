@@ -1,3 +1,7 @@
+#pragma once
+
+#include <ShaderHeaders/VulkanTriangle.h>
+#include <ShaderHeaders/DebugCircle.h>
 #include <stdlib.h>
 #include <definitions.h>
 #include <GLFW/glfw3.h>
@@ -49,20 +53,6 @@ typedef struct
 {
     VkDeviceMemory memory;
     VkBuffer buffer;
-    uint32_t count;
-} s_buffers;
-
-typedef struct
-{
-    VkDeviceMemory memory;
-    VkBuffer buffer;
-    VkDescriptorBufferInfo descriptor;
-} s_uniformBuffer;
-
-typedef struct
-{
-    VkDeviceMemory memory;
-    VkBuffer buffer;
 } s_stagingBuffer;
 
 typedef struct
@@ -84,18 +74,6 @@ typedef struct
 
 typedef struct
 {
-    VkSampler sampler;
-    VkImage image;
-    VkImageLayout imageLayout;
-    VkDeviceMemory deviceMemory;
-    VkDescriptorSet set;
-    VkImageView view;
-    uint32_t width, height;
-    uint32_t mipLevels;
-} s_texture;
-
-typedef struct
-{
     glm::vec2 pos;
     glm::vec2 uv;
 } s_vertex;
@@ -112,6 +90,8 @@ class ThinDrawer
 public:
 
     ThinDrawer();
+
+    // Base var start
 
     uint32_t dpiScaling = 1;
     uint32_t frameNumber = 0;
@@ -135,29 +115,14 @@ public:
 
     VkDescriptorPool descriptorPool;
 
-    VkDescriptorSetLayout descriptorSetLayout;
-    VkDescriptorSetLayout textureSetLayout;
-    VkPipelineLayout pipelineLayout;
-    VkPipeline pipeline;
-    VkDescriptorSet descriptorSet;
+    // Diff var start
 
-    VkDescriptorSetLayout dc_descriptorSetLayout;
-    VkPipelineLayout dc_pipelineLayout;
-    VkPipeline dc_pipeline;
-    VkDescriptorSet dc_descriptorSet;
-
-    s_buffers vertices;
-    s_buffers indices;
-    s_uniformBuffer uniformBufferVS;
-    s_uniformBuffer uniformBufferFS;
-    s_uniformBuffer uniformBufferFS2;
-
-    s_buffers vertices2;
-    s_uniformBuffer dc_uniformBufferVS;
-    s_uniformBuffer dc_uniformBufferFS;
+    ShaderBase* texturedShader;
+    ShaderBase* debugCircleShader;
 
     std::vector<s_texture*> loadedTextures;
-    s_texture singleTexture;
+
+    // var end
 
     void surfaceRecreate();
 
@@ -181,6 +146,9 @@ public:
 
     void renderLoop();
 
+    void bufferStage(void* bufferData, uint32_t dataSize, VkBufferUsageFlags flags, s_buffers* fillBuffer);
+    VkGraphicsPipelineCreateInfo* getPipelineInfoBase();
+    static void freePipelineData(VkGraphicsPipelineCreateInfo* pipelineCreateInfo);
     void uniformHelper(int size, s_uniformBuffer* uniformBuffer);
 
     VkCommandBuffer getCommandBuffer(bool begin);
@@ -190,7 +158,7 @@ public:
 
     VkCommandBuffer createCommandBuffer(VkCommandBufferLevel level, VkCommandPool pool, bool begin);
     void loadTexture(char* fileName, s_texture* texture);
-    void updateImageDescriptors(s_texture* tex);
+    void updateImageDescriptors(s_texture* tex, VkDescriptorSetLayout& setLayout);
     void createImage(uint32_t width, uint32_t p_height, uint32_t mipLevels,
                      VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                      VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);

@@ -9,10 +9,9 @@ include_directories(include)
 
 add_executable(VkGraphics2D main.cpp src/Shader.cpp include/Shader.h)
 
-file(GLOB sourceFiles src/*.cpp)
+file(GLOB sourceFiles src/*.cpp src/ShaderSources/*.cpp)
+file(GLOB headerFiles include/ShaderHeaders/*.h)
 file(GLOB headerFiles include/*.h)
-
-message(${sourceFiles})
 
 add_library(vkMines ${headerFiles} ${sourceFiles})
 
