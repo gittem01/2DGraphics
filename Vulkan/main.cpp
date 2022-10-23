@@ -4,9 +4,8 @@ int main()
 {
     ThinDrawer* thinDrawer = new ThinDrawer();
 
-    while (!glfwWindowShouldClose(thinDrawer->window))
+    while (!glfwWindowShouldClose(thinDrawer->wh->window))
     {
-        glfwPollEvents();
         thinDrawer->renderLoop();
     }
 

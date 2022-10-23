@@ -48,7 +48,7 @@ VkExtent2D SwapChain::chooseSwapExtent() {
     }
     else {
         int width, height;
-        glfwGetFramebufferSize(thinDrawer->window, &width, &height);
+        glfwGetFramebufferSize(thinDrawer->wh->window, &width, &height);
 
         VkExtent2D actualExtent = {
             static_cast<uint32_t>(width),

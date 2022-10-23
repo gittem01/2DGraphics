@@ -2,6 +2,7 @@
 
 #include <ShaderHeaders/VulkanTriangle.h>
 #include <ShaderHeaders/DebugCircle.h>
+#include <WindowHandler.h>
 #include <stdlib.h>
 #include <definitions.h>
 #include <GLFW/glfw3.h>
@@ -93,7 +94,6 @@ public:
 
     // Base var start
 
-    uint32_t dpiScaling = 1;
     uint32_t frameNumber = 0;
     uint32_t lastSwapChainImageIndex;
     VkSampleCountFlagBits samples;
@@ -108,7 +108,8 @@ public:
     VkRenderPass renderPass;
     VkCommandPool uploadPool;
     VkFence uploadFence;
-    GLFWwindow* window;
+
+    WindowHandler* wh;
 
     std::vector<s_frameData> frames;
     std::vector<VkCommandBuffer> drawCommandBuffers;

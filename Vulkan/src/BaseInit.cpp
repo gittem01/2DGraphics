@@ -1,33 +1,13 @@
 #include <ThinDrawer.h>
 #include <SwapChain.h>
 #include <IOHelper.h>
+#include <Camera.h>
 
 void ThinDrawer::createWindow()
 {
-    int width = 1200;
-    int height = 720;
-    if (!glfwInit())
-    {
-        printf("!glfwInit()\n");
-        exit(1);
-    }
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    window = glfwCreateWindow(width, height, "Start Window", NULL, NULL);
-    if (!window)
-    {
-        glfwTerminate();
-        exit(1);
-    }
-
-    int x1, y1, x2, y2;
-    glfwGetWindowSize(window, &x1, &y1);
-    glfwGetFramebufferSize(window, &x2, &y2);
-
-    dpiScaling = std::round(x2 / x1);
-
-    width *= dpiScaling;
-    height *= dpiScaling;
+    wh = new WindowHandler(NULL);
+    Camera* cam = new Camera(glm::vec2(0, 0), wh);
+    wh->cam = cam;
 }
 
 void ThinDrawer::initBase()
@@ -42,7 +22,7 @@ void ThinDrawer::initBase()
 
     createInstance();
 
-    CHECK_RESULT_VK(glfwCreateWindowSurface(instance, window, NULL, &swapChain->surface));
+    CHECK_RESULT_VK(glfwCreateWindowSurface(instance, wh->window, NULL, &swapChain->surface));
 
     selectPhysicalDevice();
 

@@ -1,5 +1,6 @@
 #include <ShaderHeaders/DebugCircle.h>
 #include <ThinDrawer.h>
+#include <Camera.h>
 #include <Shader.h>
 #include <definitions.h>
 #include <vkInit.h>
@@ -51,8 +52,6 @@ void DebugCircle::prepareUniforms()
 
     uint8_t* pData;
     s_uboVS uboVS;
-    uboVS.orthoMatrix = glm::ortho(-4.0f, +4.0f, -2.25f, +2.25f, -100.0f, 100.0f);
-    uboVS.orthoMatrix[1][1] *= -1;
     uboVS.modelMatrix = glm::mat4(1.0f);
     uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix, glm::pi<float>() * 0.25f, glm::vec3(0, 0, 1));
     uboVS.modelMatrix = glm::scale(uboVS.modelMatrix, glm::vec3(2.5f, 1.0f, 1.0f));

@@ -1,5 +1,6 @@
 #include <ThinDrawer.h>
 #include <SwapChain.h>
+#include <Camera.h>
 #include <Shader.h>
 #include <vkInit.h>
 #include <vector>
@@ -51,6 +52,18 @@ void ThinDrawer::initExtra()
 
 void ThinDrawer::renderLoop()
 {
+    wh->looper();
+    wh->cam->update();
+
+    s_uboVS* pData;
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, texturedShader->uniformBuffers[0]->memory, 0, sizeof(s_uboVS), 0, (void**)&pData));
+    pData->orthoMatrix = wh->cam->ortho;
+    vkUnmapMemory(logicalDevice, texturedShader->uniformBuffers[0]->memory);
+
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugCircleShader->uniformBuffers[0]->memory, 0, sizeof(s_uboVS), 0, (void**)&pData));
+    pData->orthoMatrix = wh->cam->ortho;
+    vkUnmapMemory(logicalDevice, debugCircleShader->uniformBuffers[0]->memory);
+
     s_frameData currentFrame = frames[frameNumber % swapChain->imageCount];
 
     CHECK_RESULT_VK(vkWaitForFences(logicalDevice, 1, &currentFrame.renderFence, true, UINT64_MAX));
