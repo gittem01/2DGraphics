@@ -97,7 +97,7 @@ public:
     uint32_t frameNumber = 0;
     uint32_t lastSwapChainImageIndex;
     VkSampleCountFlagBits samples;
-    VkSampleCountFlagBits desiredSamples = VK_SAMPLE_COUNT_8_BIT;
+    VkSampleCountFlagBits desiredSamples = VK_SAMPLE_COUNT_1_BIT;
 
     s_vulkanInfo* vulkanInfo;
     VkInstance instance;
@@ -120,8 +120,6 @@ public:
 
     ShaderBase* texturedShader;
     ShaderBase* debugCircleShader;
-
-    std::vector<s_texture*> loadedTextures;
 
     // var end
 

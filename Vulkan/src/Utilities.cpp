@@ -306,14 +306,10 @@ void ThinDrawer::loadTexture(char* fileName, s_texture* texture)
     sampler.compareOp = VK_COMPARE_OP_NEVER;
     sampler.minLod = 0.0f;
     sampler.maxLod = (float)texture->mipLevels;
-    if (vulkanInfo->features.samplerAnisotropy) {
-        sampler.maxAnisotropy = vulkanInfo->deviceProperties.limits.maxSamplerAnisotropy;
-        sampler.anisotropyEnable = VK_TRUE;
-    } else {
-        sampler.maxAnisotropy = 1.0;
-        sampler.anisotropyEnable = VK_FALSE;
-    }
+    sampler.maxAnisotropy = 1.0;
+    sampler.anisotropyEnable = VK_FALSE;
     sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+    
     CHECK_RESULT_VK(vkCreateSampler(logicalDevice, &sampler, VK_NULL_HANDLE, &texture->sampler));
 
     VkImageViewCreateInfo view = { };
@@ -330,8 +326,6 @@ void ThinDrawer::loadTexture(char* fileName, s_texture* texture)
     view.image = texture->image;
 
     CHECK_RESULT_VK(vkCreateImageView(logicalDevice, &view, VK_NULL_HANDLE, &texture->view));
-
-    loadedTextures.push_back(texture);
 }
 
 VkGraphicsPipelineCreateInfo* ThinDrawer::getPipelineInfoBase()
@@ -393,7 +387,8 @@ VkGraphicsPipelineCreateInfo* ThinDrawer::getPipelineInfoBase()
     VkPipelineMultisampleStateCreateInfo* multisampleState = (VkPipelineMultisampleStateCreateInfo*)calloc(1, sizeof(VkPipelineMultisampleStateCreateInfo));
     multisampleState->sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampleState->rasterizationSamples = samples;
-    multisampleState->sampleShadingEnable = VK_TRUE;
+    // avoid it, instead use manual sampling as much as you can
+    multisampleState->sampleShadingEnable = VK_FALSE;
     multisampleState->minSampleShading = 1.0f;
 
     pipelineCreateInfo->pInputAssemblyState = inputAssemblyState;
