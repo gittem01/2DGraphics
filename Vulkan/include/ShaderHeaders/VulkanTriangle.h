@@ -7,7 +7,7 @@ class VulkanTriangle : public ShaderBase
 	friend class ThinDrawer;
 
 private:
-    VulkanTriangle::VulkanTriangle(ThinDrawer* thinDrawer) : ShaderBase(thinDrawer) { }
+    VulkanTriangle(ThinDrawer* thinDrawer) : ShaderBase(thinDrawer) { }
 
     void prepareVertexData();
     void prepareUniforms();
