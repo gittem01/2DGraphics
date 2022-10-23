@@ -7,7 +7,7 @@ class DebugCircle : public ShaderBase
     friend class ThinDrawer;
 
 private:
-    DebugCircle::DebugCircle(ThinDrawer* thinDrawer) : ShaderBase(thinDrawer) { }
+    DebugCircle(ThinDrawer* thinDrawer) : ShaderBase(thinDrawer) { }
 
     void prepareVertexData();
     void prepareUniforms();
