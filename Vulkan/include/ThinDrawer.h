@@ -112,7 +112,6 @@ public:
     WindowHandler* wh;
 
     std::vector<s_frameData> frames;
-    std::vector<VkCommandBuffer> drawCommandBuffers;
 
     VkDescriptorPool descriptorPool;
 

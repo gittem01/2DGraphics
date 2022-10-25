@@ -310,14 +310,6 @@ void ThinDrawer::createCommands()
 
         CHECK_RESULT_VK(vkAllocateCommandBuffers(logicalDevice, &cmdAllocInfo, &frames[i].commandBuffer));
     }
-
-    drawCommandBuffers.resize(swapChain->imageCount);
-    VkCommandBufferAllocateInfo cmdBufAllocateInfo = { };
-    cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    cmdBufAllocateInfo.commandBufferCount = drawCommandBuffers.size();
-    cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    cmdBufAllocateInfo.commandPool = frames[0].commandPool;
-    CHECK_RESULT_VK(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, drawCommandBuffers.data()));
 }
 
 void ThinDrawer::createSyncThings()
