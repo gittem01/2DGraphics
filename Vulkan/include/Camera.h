@@ -26,8 +26,8 @@ public:
 
 	GLFWwindow* window;
 	float zoom = 0.8;
-	float zoomInc = 0.02;
-	float dragSmth = 0.05f;
+	float zoomInc = 0.5;
+	float dragSmth = 0.5f;
 	float neededZoom = 0;
 	glm::vec2 zoomPoint;
 	glm::vec2 lastPos = glm::vec2(-1, -1);

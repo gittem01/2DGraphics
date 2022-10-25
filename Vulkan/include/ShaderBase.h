@@ -42,10 +42,10 @@ protected:
     std::vector<s_texture*> textureData;
     VkPipelineLayout pipelineLayout;
     VkPipeline pipeline;
-    VkDescriptorSet descriptorSet;
+    std::vector<VkDescriptorSet> descriptorSet;
 
     std::vector<s_buffers*> buffers;
-    std::vector<s_uniformBuffer*> uniformBuffers;
+    std::vector<std::vector<s_uniformBuffer*>> uniformBuffers;
 
     ThinDrawer* thinDrawer;
     VkDevice logicalDevice;

@@ -55,20 +55,21 @@ void ThinDrawer::renderLoop()
     wh->looper();
     wh->cam->update();
 
+    int imNum = frameNumber % swapChain->imageCount;
+
     s_uboVS* pData;
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, texturedShader->uniformBuffers[0]->memory, 0, sizeof(s_uboVS), 0, (void**)&pData));
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, texturedShader->uniformBuffers[imNum][0]->memory, 0, sizeof(s_uboVS), 0, (void**)&pData));
     pData->orthoMatrix = wh->cam->ortho;
-    vkUnmapMemory(logicalDevice, texturedShader->uniformBuffers[0]->memory);
+    vkUnmapMemory(logicalDevice, texturedShader->uniformBuffers[imNum][0]->memory);
 
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugCircleShader->uniformBuffers[0]->memory, 0, sizeof(s_uboVS), 0, (void**)&pData));
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugCircleShader->uniformBuffers[imNum][0]->memory, 0, sizeof(s_uboVS), 0, (void**)&pData));
     pData->orthoMatrix = wh->cam->ortho;
-    vkUnmapMemory(logicalDevice, debugCircleShader->uniformBuffers[0]->memory);
+    vkUnmapMemory(logicalDevice, debugCircleShader->uniformBuffers[imNum][0]->memory);
 
-    s_frameData currentFrame = frames[frameNumber % swapChain->imageCount];
+    s_frameData currentFrame = frames[imNum];
 
     CHECK_RESULT_VK(vkWaitForFences(logicalDevice, 1, &currentFrame.renderFence, true, UINT64_MAX));
     CHECK_RESULT_VK(vkResetFences(logicalDevice, 1, &currentFrame.renderFence));
-    CHECK_RESULT_VK(vkResetCommandBuffer(currentFrame.commandBuffer, 0));
 
     VkResult result = vkAcquireNextImageKHR(logicalDevice, swapChain->swapChain, UINT64_MAX,
                           currentFrame.presentSemaphore, VK_NULL_HANDLE, &lastSwapChainImageIndex);
@@ -92,7 +93,7 @@ void ThinDrawer::renderLoop()
     submit.pSignalSemaphores = &currentFrame.renderSemaphore;
 
     submit.commandBufferCount = 1;
-    submit.pCommandBuffers = &drawCommandBuffers[lastSwapChainImageIndex % drawCommandBuffers.size()];
+    submit.pCommandBuffers = &drawCommandBuffers[lastSwapChainImageIndex];
 
     CHECK_RESULT_VK(vkQueueSubmit(queues.graphicsQueue, 1, &submit, currentFrame.renderFence));
     VkPresentInfoKHR presentInfo = { };
@@ -191,13 +192,13 @@ void ThinDrawer::buildCommandBuffers()
         vkCmdBindPipeline(drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, texturedShader->pipeline);
 
         vkCmdBindDescriptorSets(drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                texturedShader->pipelineLayout, 0, 1, &texturedShader->descriptorSet, 0, VK_NULL_HANDLE);
+                                texturedShader->pipelineLayout, 0, 1, &texturedShader->descriptorSet[i], 0, VK_NULL_HANDLE);
 
         vkCmdBindDescriptorSets(drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 texturedShader->pipelineLayout, 1, 1, &texturedShader->textureData[0]->set, 0, VK_NULL_HANDLE);
 
-        VkDeviceSize offsets[1] = { 0 };
-        vkCmdBindVertexBuffers(drawCommandBuffers[i], 0, 1, &texturedShader->buffers[0]->buffer, offsets);
+        VkDeviceSize offsets = 0;
+        vkCmdBindVertexBuffers(drawCommandBuffers[i], 0, 1, &texturedShader->buffers[0]->buffer, &offsets);
         vkCmdBindIndexBuffer(drawCommandBuffers[i], texturedShader->buffers[1]->buffer, 0, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(drawCommandBuffers[i], texturedShader->buffers[1]->count, 1, 0, 0, 1);
 
@@ -206,9 +207,9 @@ void ThinDrawer::buildCommandBuffers()
         vkCmdBindPipeline(drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, debugCircleShader->pipeline);
 
         vkCmdBindDescriptorSets(drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                debugCircleShader->pipelineLayout, 0, 1, &debugCircleShader->descriptorSet, 0, VK_NULL_HANDLE);
+                                debugCircleShader->pipelineLayout, 0, 1, &debugCircleShader->descriptorSet[i], 0, VK_NULL_HANDLE);
 
-        vkCmdBindVertexBuffers(drawCommandBuffers[i], 0, 1, &debugCircleShader->buffers[0]->buffer, offsets);
+        vkCmdBindVertexBuffers(drawCommandBuffers[i], 0, 1, &debugCircleShader->buffers[0]->buffer, &offsets);
         vkCmdBindIndexBuffer(drawCommandBuffers[i], debugCircleShader->buffers[1]->buffer, 0, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(drawCommandBuffers[i], debugCircleShader->buffers[1]->count, 1, 0, 0, 1);
 

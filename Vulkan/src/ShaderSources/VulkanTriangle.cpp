@@ -1,4 +1,5 @@
 #include <ShaderHeaders/VulkanTriangle.h>
+#include <SwapChain.h>
 #include <ThinDrawer.h>
 #include <Camera.h>
 #include <Shader.h>
@@ -39,41 +40,46 @@ void VulkanTriangle::prepareVertexData()
 void VulkanTriangle::prepareUniforms()
 {
     const int bufferSize = 3;
+    int imCount = thinDrawer->swapChain->imageCount;
+    uniformBuffers.resize(imCount);
 
-    uniformBuffers.resize(bufferSize);
-
-    for (int i = 0; i < bufferSize; i++)
+    for (int i = 0; i < imCount; i++)
     {
-        uniformBuffers[i] = (s_uniformBuffer*)malloc(sizeof(s_uniformBuffer));
+        uniformBuffers[i].resize(bufferSize);
+
+        for (int j = 0; j < bufferSize; j++)
+        {
+            uniformBuffers[i][j] = (s_uniformBuffer*)malloc(sizeof(s_uniformBuffer));
+        }
+
+        s_uniformBuffer* uniformBufferVS = uniformBuffers[i][0];
+        s_uniformBuffer* uniformBufferFS1 = uniformBuffers[i][1];
+        s_uniformBuffer* uniformBufferFS2 = uniformBuffers[i][2];
+
+        thinDrawer->uniformHelper(sizeof(s_uboVS), uniformBufferVS);
+
+        s_uboVS uboVS;
+        uboVS.modelMatrix = glm::mat4(1.0f);
+        uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix, glm::pi<float>() * 0.25f, glm::vec3(0, 0, 1));
+        uboVS.modelMatrix = glm::scale(uboVS.modelMatrix, glm::vec3(2.5f, 1.0f, 1.0f));
+
+        uint8_t* pData;
+        CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferVS->memory, 0, sizeof(s_uboVS), 0, (void**)&pData));
+        memcpy(pData, &uboVS, sizeof(s_uboVS));
+        vkUnmapMemory(logicalDevice, uniformBufferVS->memory);
+
+        glm::vec4 vec[2] = { glm::vec4(-1.0f, 1.0f, 1.0f, 1.0f), glm::vec4(1.0f, -1.0f, -1.0f, -1.0f) };
+        thinDrawer->uniformHelper(sizeof(vec), uniformBufferFS2);
+        CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferFS2->memory, 0, sizeof(vec), 0, (void**)&pData));
+        memcpy(pData, &vec, sizeof(vec));
+        vkUnmapMemory(logicalDevice, uniformBufferFS2->memory);
+
+        thinDrawer->uniformHelper(sizeof(int), uniformBufferFS1);
+        CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferFS1->memory, 0, sizeof(int), 0, (void**)&pData));
+        int val = sizeof(vec) / sizeof(glm::vec4);
+        memcpy(pData, &val, sizeof(int));
+        vkUnmapMemory(logicalDevice, uniformBufferFS1->memory);
     }
-
-    s_uniformBuffer* uniformBufferVS = uniformBuffers[0];
-    s_uniformBuffer* uniformBufferFS1 = uniformBuffers[1];
-    s_uniformBuffer* uniformBufferFS2 = uniformBuffers[2];
-
-    thinDrawer->uniformHelper(sizeof(s_uboVS), uniformBufferVS);
-
-    s_uboVS uboVS;
-    uboVS.modelMatrix = glm::mat4(1.0f);
-    uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix, glm::pi<float>() * 0.25f, glm::vec3(0, 0, 1));
-    uboVS.modelMatrix = glm::scale(uboVS.modelMatrix, glm::vec3(2.5f, 1.0f, 1.0f));
-
-    uint8_t* pData;
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferVS->memory, 0, sizeof(s_uboVS), 0, (void**)&pData));
-    memcpy(pData, &uboVS, sizeof(s_uboVS));
-    vkUnmapMemory(logicalDevice, uniformBufferVS->memory);
-
-    glm::vec4 vec[2] = { glm::vec4(-1.0f, 1.0f, 1.0f, 1.0f), glm::vec4(1.0f, -1.0f, -1.0f, -1.0f) };
-    thinDrawer->uniformHelper(sizeof(vec), uniformBufferFS2);
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferFS2->memory, 0, sizeof(vec), 0, (void**)&pData));
-    memcpy(pData, &vec, sizeof(vec));
-    vkUnmapMemory(logicalDevice, uniformBufferFS2->memory);
-
-    thinDrawer->uniformHelper(sizeof(int), uniformBufferFS1);
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferFS1->memory, 0, sizeof(int), 0, (void**)&pData));
-    int val = sizeof(vec) / sizeof(glm::vec4);
-    memcpy(pData, &val, sizeof(int));
-    vkUnmapMemory(logicalDevice, uniformBufferFS1->memory);
 }
 
 void VulkanTriangle::setupDescriptorSetLayout()
@@ -157,33 +163,38 @@ void VulkanTriangle::preparePipeline()
 
 void VulkanTriangle::setupDescriptorSet()
 {
-    VkDescriptorSetAllocateInfo allocInfo = vkinit::descriptorSetAllocateInfo(thinDrawer->descriptorPool, &descriptorSets[0], 1);
+    int imCount = thinDrawer->swapChain->imageCount;
+    descriptorSet.resize(imCount);
 
-    CHECK_RESULT_VK(vkAllocateDescriptorSets(logicalDevice, &allocInfo, &descriptorSet));
-
-    VkWriteDescriptorSet writeDescriptorSet = { };
-
-    writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writeDescriptorSet.dstSet = descriptorSet;
-    writeDescriptorSet.descriptorCount = 1;
-    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    writeDescriptorSet.pBufferInfo = &uniformBuffers[0]->descriptor;
-    writeDescriptorSet.dstBinding = 0;
-
-    vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
-
-    writeDescriptorSet.pBufferInfo = &uniformBuffers[1]->descriptor;
-    writeDescriptorSet.dstBinding = 1;
-
-    vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
-
-    writeDescriptorSet.pBufferInfo = &uniformBuffers[2]->descriptor;
-    writeDescriptorSet.dstBinding = 2;
-
-    vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
-
-    for (int i = 0; i < textureData.size(); i++)
+    for (int i = 0; i < imCount; i++)
     {
-        thinDrawer->updateImageDescriptors(textureData[i], descriptorSets[1]);
+        VkDescriptorSetAllocateInfo allocInfo = vkinit::descriptorSetAllocateInfo(thinDrawer->descriptorPool, &descriptorSets[0], 1);
+        CHECK_RESULT_VK(vkAllocateDescriptorSets(logicalDevice, &allocInfo, &descriptorSet[i]));
+
+        VkWriteDescriptorSet writeDescriptorSet = { };
+
+        writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writeDescriptorSet.dstSet = descriptorSet[i];
+        writeDescriptorSet.descriptorCount = 1;
+        writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        writeDescriptorSet.pBufferInfo = &uniformBuffers[i][0]->descriptor;
+        writeDescriptorSet.dstBinding = 0;
+
+        vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
+
+        writeDescriptorSet.pBufferInfo = &uniformBuffers[i][1]->descriptor;
+        writeDescriptorSet.dstBinding = 1;
+
+        vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
+
+        writeDescriptorSet.pBufferInfo = &uniformBuffers[i][2]->descriptor;
+        writeDescriptorSet.dstBinding = 2;
+
+        vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
+
+        for (int i = 0; i < textureData.size(); i++)
+        {
+            thinDrawer->updateImageDescriptors(textureData[i], descriptorSets[1]);
+        }
     }
 }

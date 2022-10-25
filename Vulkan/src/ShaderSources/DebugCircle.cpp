@@ -1,4 +1,5 @@
 #include <ShaderHeaders/DebugCircle.h>
+#include <SwapChain.h>
 #include <ThinDrawer.h>
 #include <Camera.h>
 #include <Shader.h>
@@ -37,39 +38,45 @@ void DebugCircle::prepareVertexData()
 void DebugCircle::prepareUniforms()
 {
     const int bufferSize = 2;
+    int imCount = thinDrawer->swapChain->imageCount;
 
-    uniformBuffers.resize(bufferSize);
+    uniformBuffers.resize(imCount);
 
-    for (int i = 0; i < bufferSize; i++)
+    for (int i = 0; i < imCount; i++)
     {
-        uniformBuffers[i] = (s_uniformBuffer*)malloc(sizeof(s_uniformBuffer));
+        uniformBuffers[i].resize(bufferSize);
+
+        for (int j = 0; j < bufferSize; j++)
+        {
+            uniformBuffers[i][j] = (s_uniformBuffer*)malloc(sizeof(s_uniformBuffer));
+        }
+
+        s_uniformBuffer* uniformBufferVS = uniformBuffers[i][0];
+        s_uniformBuffer* uniformBufferFS = uniformBuffers[i][1];
+
+        thinDrawer->uniformHelper(sizeof(s_uboVS), uniformBufferVS);
+
+        uint8_t* pData;
+        s_uboVS uboVS;
+        uboVS.modelMatrix = glm::mat4(1.0f);
+        uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix, glm::pi<float>() * 0.25f, glm::vec3(0, 0, 1));
+        uboVS.modelMatrix = glm::scale(uboVS.modelMatrix, glm::vec3(2.5f, 1.0f, 1.0f));
+        uboVS.modelMatrix = glm::mat4(1.0f);
+        CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferVS->memory, 0, sizeof(uboVS), 0, (void**)&pData));
+        memcpy(pData, &uboVS, sizeof(uboVS));
+
+        vkUnmapMemory(logicalDevice, uniformBufferVS->memory);
+
+        thinDrawer->uniformHelper(sizeof(s_uboFSColor), uniformBufferFS);
+
+        s_uboFSColor uboFSColor;
+        uboFSColor.color = glm::vec4(0.2f, 1.0f, 1.0f, 0.6f);
+
+        CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferFS->memory, 0, sizeof(uboFSColor), 0, (void**)&pData));
+        memcpy(pData, &uboFSColor, sizeof(uboFSColor));
+
+        vkUnmapMemory(logicalDevice, uniformBufferFS->memory);
     }
-
-    s_uniformBuffer* uniformBufferVS = uniformBuffers[0];
-    s_uniformBuffer* uniformBufferFS = uniformBuffers[1];
-
-    thinDrawer->uniformHelper(sizeof(s_uboVS), uniformBufferVS);
-
-    uint8_t* pData;
-    s_uboVS uboVS;
-    uboVS.modelMatrix = glm::mat4(1.0f);
-    uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix, glm::pi<float>() * 0.25f, glm::vec3(0, 0, 1));
-    uboVS.modelMatrix = glm::scale(uboVS.modelMatrix, glm::vec3(2.5f, 1.0f, 1.0f));
-    uboVS.modelMatrix = glm::mat4(1.0f);
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferVS->memory, 0, sizeof(uboVS), 0, (void**)&pData));
-    memcpy(pData, &uboVS, sizeof(uboVS));
-
-    vkUnmapMemory(logicalDevice, uniformBufferVS->memory);
-
-    thinDrawer->uniformHelper(sizeof(s_uboFSColor), uniformBufferFS);
-
-    s_uboFSColor uboFSColor;
-    uboFSColor.color = glm::vec4(0.2f, 1.0f, 1.0f, 0.6f);
-
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferFS->memory, 0, sizeof(uboFSColor), 0, (void**)&pData));
-    memcpy(pData, &uboFSColor, sizeof(uboFSColor));
-
-    vkUnmapMemory(logicalDevice, uniformBufferFS->memory);
 }
 
 void DebugCircle::setupDescriptorSetLayout()
@@ -130,20 +137,25 @@ void DebugCircle::preparePipeline()
 
 void DebugCircle::setupDescriptorSet()
 {
-    VkDescriptorSetAllocateInfo allocInfo = vkinit::descriptorSetAllocateInfo(thinDrawer->descriptorPool, descriptorSets.data(), 1);
+    int imCount = thinDrawer->swapChain->imageCount;
+    descriptorSet.resize(imCount);
 
-    CHECK_RESULT_VK(vkAllocateDescriptorSets(logicalDevice, &allocInfo, &descriptorSet));
+    for (int i = 0; i < imCount; i++)
+    {
+        VkDescriptorSetAllocateInfo allocInfo = vkinit::descriptorSetAllocateInfo(thinDrawer->descriptorPool, descriptorSets.data(), 1);
+        CHECK_RESULT_VK(vkAllocateDescriptorSets(logicalDevice, &allocInfo, &descriptorSet[i]));
 
-    VkWriteDescriptorSet writeDescriptorSet = { };
-    writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    writeDescriptorSet.dstSet = descriptorSet;
-    writeDescriptorSet.pBufferInfo = &uniformBuffers[0]->descriptor;
-    writeDescriptorSet.descriptorCount = 1;
-    writeDescriptorSet.dstBinding = 0;
-    vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
+        VkWriteDescriptorSet writeDescriptorSet = { };
+        writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        writeDescriptorSet.dstSet = descriptorSet[i];
+        writeDescriptorSet.pBufferInfo = &uniformBuffers[i][0]->descriptor;
+        writeDescriptorSet.descriptorCount = 1;
+        writeDescriptorSet.dstBinding = 0;
+        vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
 
-    writeDescriptorSet.dstBinding = 1;
-    writeDescriptorSet.pBufferInfo = &uniformBuffers[1]->descriptor;
-    vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
+        writeDescriptorSet.dstBinding = 1;
+        writeDescriptorSet.pBufferInfo = &uniformBuffers[i][1]->descriptor;
+        vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
+    }
 }
