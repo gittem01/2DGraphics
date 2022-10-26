@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
-#include <GLM/glm.hpp>
+#include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
 
 class Camera;
