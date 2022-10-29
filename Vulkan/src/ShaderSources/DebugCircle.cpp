@@ -70,8 +70,10 @@ void DebugCircle::prepareUniforms()
         thinDrawer->uniformHelper(sizeof(s_uboFSCircle), uniformBufferFS);
 
         s_uboFSCircle uboFSCircle;
-        uboFSCircle.color = glm::vec4(0.2f, 1.0f, 1.0f, 1.0f);
+        uboFSCircle.color = glm::vec4(0.0f, 0.0f, 1.0f, 0.6f);
+        uboFSCircle.outerColor = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
         uboFSCircle.data.y = 0.1f;
+        uboFSCircle.data.z = 0.4f;
         CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferFS->memory, 0, sizeof(uboFSCircle), 0, (void**)&pData));
         memcpy(pData, &uboFSCircle, sizeof(uboFSCircle));
 

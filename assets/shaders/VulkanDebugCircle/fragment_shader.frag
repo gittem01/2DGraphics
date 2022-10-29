@@ -7,11 +7,9 @@ layout (location = 0) in vec4 localPos;
 layout (set = 0, binding = 1) uniform UBO
 {
     vec4 colour;
-    vec4 data; // zoom, lineThickness, unused, unused
+    vec4 outerColour;
+    vec4 data; // zoom, lineThickness, outerSmoothThicknessRatio, unused
 } ubo;
-
-float outerSmoothThicknessRatio = 0.5f;
-vec4 outerColour = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 
 void main()
 {
@@ -28,30 +26,32 @@ void main()
         if (len >= midDist)
         {
             float perct = distFromMidDist / (adjustedOuterLineWidth * 0.5f);
-            float reverseOuter = 1.0f - outerSmoothThicknessRatio;
+            float reverseOuter = 1.0f - ubo.data.z;
             if (perct > reverseOuter)
             {
-                perct = (perct - reverseOuter) * (1.0f / outerSmoothThicknessRatio);
-                FragColour = vec4(outerColour.xyz, 1 - perct);
+                perct = (perct - reverseOuter) * (1.0f / ubo.data.z);
+                FragColour = vec4(ubo.outerColour.xyz, (1 - perct) * ubo.outerColour.w);
             }
             else
             {
-                FragColour = outerColour;
-            } 
+                FragColour = ubo.outerColour;
+            }
         }
         else if (len >= 1 - adjustedOuterLineWidth)
         {
             float perct = -distFromMidDist / (adjustedOuterLineWidth * 0.5f);
-            float reverseOuter = 1.0f - outerSmoothThicknessRatio;
+            float reverseOuter = 1.0f - ubo.data.z;
             if (perct > reverseOuter)
             {
-                perct = (perct - reverseOuter) * (1.0f / outerSmoothThicknessRatio);
-                vec4 innerColour = vec4(ubo.colour.xyz * perct, perct * ubo.colour.w);
-                FragColour = vec4(outerColour.xyz * (1 - perct), 1 - perct) + innerColour;
+                perct = (perct - reverseOuter) * (1.0f / ubo.data.z);
+                vec4 innerColour = vec4(ubo.colour.xyz * perct * ubo.colour.w, 0);
+                float alphaVal = ubo.outerColour.w + perct * (ubo.colour.w - ubo.outerColour.w);
+                vec3 colourMix = ubo.outerColour.xyz * (1 - perct * ubo.colour.w / alphaVal) + ubo.colour.xyz * perct * ubo.colour.w / alphaVal;
+                FragColour = vec4(colourMix, alphaVal);
             }
             else
             {
-                FragColour = outerColour;
+                FragColour = ubo.outerColour;
             }
         }
     }
