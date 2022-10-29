@@ -1,4 +1,4 @@
-#include <ShaderHeaders/DebugCircle.h>
+#include <ShaderHeaders/DebugLine.h>
 #include <SwapChain.h>
 #include <ThinDrawer.h>
 #include <Camera.h>
@@ -6,36 +6,13 @@
 #include <definitions.h>
 #include <vkInit.h>
 
-void DebugCircle::prepareVertexData()
+void DebugLine::prepareVertexData()
 {
-    const int bufferSize = 2;
+    const int bufferSize = 0;
     buffers.resize(bufferSize);
-
-    for (int i = 0; i < bufferSize; i++)
-    {
-        buffers[i] = (s_buffers*)malloc(sizeof(s_buffers));
-    }
-    s_buffers* vertices = buffers[0];
-    s_buffers* indices = buffers[1];
-
-    std::vector<s_basicVertex> vertexBuffer =
-    {
-            { {+0.5f, +0.5f} },
-            { {-0.5f, +0.5f} },
-            { {-0.5f, -0.5f} },
-            { {+0.5f, -0.5f} },
-    };
-    uint32_t vertexBufferSize = static_cast<uint32_t>(vertexBuffer.size()) * sizeof(s_basicVertex);
-
-    std::vector<uint32_t> indexBuffer = { 0, 1, 2, 2, 3, 0 };
-    indices->count = static_cast<uint32_t>(indexBuffer.size());
-    uint32_t indexBufferSize = indices->count * sizeof(uint32_t);
-
-    thinDrawer->bufferStage(vertexBuffer.data(), vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, vertices);
-    thinDrawer->bufferStage(indexBuffer.data(), indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, indices);
 }
 
-void DebugCircle::prepareUniforms()
+void DebugLine::prepareUniforms()
 {
     const int bufferSize = 2;
     int imCount = thinDrawer->swapChain->imageCount;
@@ -52,34 +29,32 @@ void DebugCircle::prepareUniforms()
         }
 
         s_uniformBuffer* uniformBufferVS = uniformBuffers[i][0];
-        s_uniformBuffer* uniformBufferFS = uniformBuffers[i][1];
+        s_uniformBuffer* uniformBufferMix = uniformBuffers[i][1];
 
-        thinDrawer->uniformHelper(sizeof(s_uboVS), uniformBufferVS);
+        thinDrawer->uniformHelper(sizeof(s_uboVSLine), uniformBufferVS);
 
         uint8_t* pData;
-        s_uboVS uboVS;
-        uboVS.modelMatrix = glm::mat4(1.0f);
-        uboVS.modelMatrix = glm::scale(uboVS.modelMatrix, glm::vec3(2.0f, 2.0f, 1.0f));
+        s_uboVSLine uboVS;
+        uboVS.linePoints = glm::vec4(0.2f, -1.0f, -0.2f, 1.0f);
         CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferVS->memory, 0, sizeof(uboVS), 0, (void**)&pData));
         memcpy(pData, &uboVS, sizeof(uboVS));
 
         vkUnmapMemory(logicalDevice, uniformBufferVS->memory);
 
-        thinDrawer->uniformHelper(sizeof(s_uboFSCircle), uniformBufferFS);
+        thinDrawer->uniformHelper(sizeof(s_uboMixedLine), uniformBufferMix);
 
-        s_uboFSCircle uboFSCircle;
-        uboFSCircle.color = glm::vec4(0.0f, 0.0f, 1.0f, 0.6f);
-        uboFSCircle.outerColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-        uboFSCircle.data.y = 0.1f;
-        uboFSCircle.data.z = 0.5f;
-        CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferFS->memory, 0, sizeof(uboFSCircle), 0, (void**)&pData));
-        memcpy(pData, &uboFSCircle, sizeof(uboFSCircle));
+        s_uboMixedLine uboMixed;
+        uboMixed.color = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+        uboMixed.data.x = 1.0f;
+        uboMixed.data.y = 0.1f;
+        CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferMix->memory, 0, sizeof(uboMixed), 0, (void**)&pData));
+        memcpy(pData, &uboMixed, sizeof(uboMixed));
 
-        vkUnmapMemory(logicalDevice, uniformBufferFS->memory);
+        vkUnmapMemory(logicalDevice, uniformBufferMix->memory);
     }
 }
 
-void DebugCircle::setupDescriptorSetLayout()
+void DebugLine::setupDescriptorSetLayout()
 {
     const int descriptorSetLayoutCount = 1;
 
@@ -87,7 +62,8 @@ void DebugCircle::setupDescriptorSetLayout()
 
     VkDescriptorSetLayoutBinding layoutBinding =
         vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1, 0);
-    VkDescriptorSetLayoutBinding layoutBinding2 = vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
+    VkDescriptorSetLayoutBinding layoutBinding2 = vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
 
     VkDescriptorSetLayoutBinding bindings1[] = { layoutBinding, layoutBinding2 };
 
@@ -98,7 +74,7 @@ void DebugCircle::setupDescriptorSetLayout()
     CHECK_RESULT_VK(vkCreatePipelineLayout(logicalDevice, &pPipelineLayoutCreateInfo, VK_NULL_HANDLE, &pipelineLayout));
 }
 
-void DebugCircle::preparePipeline()
+void DebugLine::preparePipeline()
 {
     VkGraphicsPipelineCreateInfo* pipelineCreateInfo = thinDrawer->getPipelineInfoBase();
     pipelineCreateInfo->layout = pipelineLayout;
@@ -122,20 +98,20 @@ void DebugCircle::preparePipeline()
     vertexInputState.pVertexBindingDescriptions = &vertexInputBinding;
 
     std::vector<std::string> fileNames = {
-            std::string("../assets/shaders/VulkanDebugCircle/vertex_shader.vert.spv"),
-            std::string("../assets/shaders/VulkanDebugCircle/fragment_shader.frag.spv")
+            std::string("../assets/shaders/VulkanDebugLine/vertex_shader.vert.spv"),
+            std::string("../assets/shaders/VulkanDebugLine/fragment_shader.frag.spv")
     };
 
-    Shader shader2 = Shader(logicalDevice, fileNames);
+    Shader shader = Shader(logicalDevice, fileNames);
 
-    pipelineCreateInfo->stageCount = shader2.shaderStages.size();
-    pipelineCreateInfo->pStages = shader2.shaderStages.data();
+    pipelineCreateInfo->stageCount = shader.shaderStages.size();
+    pipelineCreateInfo->pStages = shader.shaderStages.data();
     pipelineCreateInfo->pVertexInputState = &vertexInputState;
 
     CHECK_RESULT_VK(vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, pipelineCreateInfo, VK_NULL_HANDLE, &pipeline));
 }
 
-void DebugCircle::setupDescriptorSet()
+void DebugLine::setupDescriptorSet()
 {
     int imCount = thinDrawer->swapChain->imageCount;
     descriptorSet.resize(imCount);

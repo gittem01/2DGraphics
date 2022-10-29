@@ -14,7 +14,7 @@ layout (set = 0, binding = 1) uniform UBO
 void main()
 {
     float adjustedOuterLineWidth = ubo.data.y / (ubo.data.x * ubo.data.x);
-    float len = length(localPos);
+    float len = length(localPos) * 2.0f;
     if (len < 1.0f - adjustedOuterLineWidth)
     {
         FragColour = ubo.colour;

@@ -19,6 +19,7 @@ void Camera::updateOrtho()
 	ySides = this->defaultYSides / (this->zoom * this->zoom) + this->pos.y;
 
 	ortho = glm::ortho(xSides.x, xSides.y, ySides.x, ySides.y, -100.0f, +100.0f);
+	ortho[1][1] *= -1;
 }
 
 void Camera::changeZoom(float inc)

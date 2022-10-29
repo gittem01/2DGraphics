@@ -2,6 +2,7 @@
 
 #include <ShaderHeaders/VulkanTriangle.h>
 #include <ShaderHeaders/DebugCircle.h>
+#include <ShaderHeaders/DebugLine.h>
 #include <WindowHandler.h>
 #include <stdlib.h>
 #include <definitions.h>
@@ -77,6 +78,18 @@ typedef struct
 
 typedef struct
 {
+    glm::vec4 color;
+    glm::vec4 data;
+} s_uboMixedLine;
+
+typedef struct
+{
+    glm::mat4 ortho;
+    glm::vec4 linePoints;
+} s_uboVSLine;
+
+typedef struct
+{
     glm::vec2 pos;
     glm::vec2 uv;
 } s_vertex;
@@ -121,6 +134,7 @@ public:
 
     ShaderBase* texturedShader;
     ShaderBase* debugCircleShader;
+    ShaderBase* debugLineShader;
 
     // var end
 
