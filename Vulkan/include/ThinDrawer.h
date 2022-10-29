@@ -71,7 +71,8 @@ typedef struct
 typedef struct
 {
     glm::vec4 color;
-} s_uboFSColor;
+    glm::vec4 data;
+} s_uboFSCircle;
 
 typedef struct
 {

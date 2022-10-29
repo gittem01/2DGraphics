@@ -67,13 +67,13 @@ void DebugCircle::prepareUniforms()
 
         vkUnmapMemory(logicalDevice, uniformBufferVS->memory);
 
-        thinDrawer->uniformHelper(sizeof(s_uboFSColor), uniformBufferFS);
+        thinDrawer->uniformHelper(sizeof(s_uboFSCircle), uniformBufferFS);
 
-        s_uboFSColor uboFSColor;
-        uboFSColor.color = glm::vec4(0.2f, 1.0f, 1.0f, 0.6f);
-
-        CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferFS->memory, 0, sizeof(uboFSColor), 0, (void**)&pData));
-        memcpy(pData, &uboFSColor, sizeof(uboFSColor));
+        s_uboFSCircle uboFSCircle;
+        uboFSCircle.color = glm::vec4(0.2f, 1.0f, 1.0f, 1.0f);
+        uboFSCircle.data.y = 0.1f;
+        CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferFS->memory, 0, sizeof(uboFSCircle), 0, (void**)&pData));
+        memcpy(pData, &uboFSCircle, sizeof(uboFSCircle));
 
         vkUnmapMemory(logicalDevice, uniformBufferFS->memory);
     }

@@ -72,6 +72,10 @@ void ThinDrawer::renderLoop()
     pData->orthoMatrix = wh->cam->ortho;
     vkUnmapMemory(logicalDevice, debugCircleShader->uniformBuffers[imNum][0]->memory);
 
+    s_uboFSCircle* uboFSCircle;
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugCircleShader->uniformBuffers[imNum][1]->memory, 0, sizeof(uboFSCircle), 0, (void**)&uboFSCircle));
+    uboFSCircle->data.x = wh->cam->zoom;
+
     s_frameData currentFrame = frames[imNum];
 
     CHECK_RESULT_VK(vkWaitForFences(logicalDevice, 1, &currentFrame.renderFence, true, UINT64_MAX));
