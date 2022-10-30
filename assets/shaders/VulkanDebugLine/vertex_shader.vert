@@ -53,9 +53,19 @@ void main()
         angle = atan(diffVec.y / diffVec.x);
     }
 
-    localPos = vCopy;
-    size = vec2(dist * 0.5f, (sharedData.data.y / (sharedData.data.x * sharedData.data.x)) * 0.5f);
+    float ySize = (sharedData.data.y / (sharedData.data.x * sharedData.data.x)) * 0.5f;
+    float xSize = dist * 0.5f;
+    size = vec2(xSize + ySize, ySize);
+    if (vCopy.x > 0)
+    {
+        vCopy.x += ySize;
+    }
+    else
+    {
+        vCopy.x -= ySize;
+    }
 
+    localPos = vCopy;
     vCopy = rotateAroundOrigin(vCopy, angle);
     // transform
     vCopy += midPoint;

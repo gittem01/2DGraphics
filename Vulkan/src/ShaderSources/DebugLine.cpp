@@ -44,9 +44,10 @@ void DebugLine::prepareUniforms()
         thinDrawer->uniformHelper(sizeof(s_uboMixedLine), uniformBufferMix);
 
         s_uboMixedLine uboMixed;
-        uboMixed.color = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+        uboMixed.color = glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);
         uboMixed.data.x = 1.0f;
         uboMixed.data.y = 0.1f;
+        uboMixed.data.z = 0.5f;
         CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferMix->memory, 0, sizeof(uboMixed), 0, (void**)&pData));
         memcpy(pData, &uboMixed, sizeof(uboMixed));
 
