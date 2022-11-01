@@ -110,7 +110,7 @@ public:
     // Base var start
 
     uint32_t frameNumber = 0;
-    uint32_t lastSwapChainImageIndex;
+    uint32_t lastSwapChainImageIndex = 0;
     VkSampleCountFlagBits samples;
     VkSampleCountFlagBits desiredSamples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -158,6 +158,7 @@ public:
     void setupDescriptorSet();
     void buildCommandBuffers();
 
+    void uniformFiller(int frameNum);
     void renderLoop();
 
     void bufferStage(void* bufferData, uint32_t dataSize, VkBufferUsageFlags flags, s_buffers* fillBuffer);

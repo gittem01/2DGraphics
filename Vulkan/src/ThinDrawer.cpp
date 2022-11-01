@@ -35,6 +35,7 @@ void ThinDrawer::surfaceRecreate()
     buildCommandBuffers();
 
     vkDeviceWaitIdle(logicalDevice);
+    printf("Recreated\n");
 }
 
 void ThinDrawer::initExtra()
@@ -58,39 +59,42 @@ void ThinDrawer::initExtra()
     buildCommandBuffers();
 }
 
+void ThinDrawer::uniformFiller(int frameNum)
+{
+    // textured
+    s_uboVS* pData;
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, texturedShader->uniformBuffers[frameNum][0]->memory, 0, sizeof(s_uboVS), 0, (void**)&pData));
+    pData->orthoMatrix = wh->cam->ortho;
+    vkUnmapMemory(logicalDevice, texturedShader->uniformBuffers[frameNum][0]->memory);
+
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugCircleShader->uniformBuffers[frameNum][0]->memory, 0, sizeof(s_uboVS), 0, (void**)&pData));
+    pData->orthoMatrix = wh->cam->ortho;
+    vkUnmapMemory(logicalDevice, debugCircleShader->uniformBuffers[frameNum][0]->memory);
+
+    // circle
+    s_uboFSCircle* uboFSCircle;
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugCircleShader->uniformBuffers[frameNum][1]->memory, 0, sizeof(uboFSCircle), 0, (void**)&uboFSCircle));
+    uboFSCircle->data.x = wh->cam->zoom;
+    vkUnmapMemory(logicalDevice, debugCircleShader->uniformBuffers[frameNum][1]->memory);
+
+    // line
+    s_uboVSLine* uboVS;
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugLineShader->uniformBuffers[frameNum][0]->memory, 0, sizeof(uboVS), 0, (void**)&uboVS));
+    uboVS->ortho = wh->cam->ortho;
+    vkUnmapMemory(logicalDevice, debugLineShader->uniformBuffers[frameNum][0]->memory);
+
+    s_uboMixedLine* uboMixed;
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugLineShader->uniformBuffers[frameNum][1]->memory, 0, sizeof(uboMixed), 0, (void**)&uboMixed));
+    uboMixed->data.x = wh->cam->zoom;
+    vkUnmapMemory(logicalDevice, debugLineShader->uniformBuffers[frameNum][1]->memory);
+}
+
 void ThinDrawer::renderLoop()
 {
     wh->looper();
     wh->cam->update();
 
     int imNum = frameNumber % swapChain->imageCount;
-
-    // textured
-    s_uboVS* pData;
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, texturedShader->uniformBuffers[imNum][0]->memory, 0, sizeof(s_uboVS), 0, (void**)&pData));
-    pData->orthoMatrix = wh->cam->ortho;
-    vkUnmapMemory(logicalDevice, texturedShader->uniformBuffers[imNum][0]->memory);
-
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugCircleShader->uniformBuffers[imNum][0]->memory, 0, sizeof(s_uboVS), 0, (void**)&pData));
-    pData->orthoMatrix = wh->cam->ortho;
-    vkUnmapMemory(logicalDevice, debugCircleShader->uniformBuffers[imNum][0]->memory);
-
-    // circle
-    s_uboFSCircle* uboFSCircle;
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugCircleShader->uniformBuffers[imNum][1]->memory, 0, sizeof(uboFSCircle), 0, (void**)&uboFSCircle));
-    uboFSCircle->data.x = wh->cam->zoom;
-    vkUnmapMemory(logicalDevice, debugCircleShader->uniformBuffers[imNum][1]->memory);
-
-    // line
-    s_uboVSLine* uboVS;
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugLineShader->uniformBuffers[imNum][0]->memory, 0, sizeof(uboVS), 0, (void**)&uboVS));
-    uboVS->ortho = wh->cam->ortho;
-    vkUnmapMemory(logicalDevice, debugLineShader->uniformBuffers[imNum][0]->memory);
-
-    s_uboMixedLine* uboMixed;
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugLineShader->uniformBuffers[imNum][1]->memory, 0, sizeof(uboMixed), 0, (void**)&uboMixed));
-    uboMixed->data.x = wh->cam->zoom;
-    vkUnmapMemory(logicalDevice, debugLineShader->uniformBuffers[imNum][1]->memory);
 
     s_frameData currentFrame = frames[imNum];
 
@@ -99,6 +103,8 @@ void ThinDrawer::renderLoop()
 
     VkResult result = vkAcquireNextImageKHR(logicalDevice, swapChain->swapChain, UINT64_MAX,
                           currentFrame.presentSemaphore, VK_NULL_HANDLE, &lastSwapChainImageIndex);
+
+    uniformFiller(lastSwapChainImageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
