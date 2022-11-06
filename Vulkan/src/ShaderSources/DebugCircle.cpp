@@ -122,8 +122,8 @@ void DebugCircle::preparePipeline()
     vertexInputState.pVertexBindingDescriptions = &vertexInputBinding;
 
     std::vector<std::string> fileNames = {
-            std::string("../assets/shaders/VulkanDebugCircle/vertex_shader.vert.spv"),
-            std::string("../assets/shaders/VulkanDebugCircle/fragment_shader.frag.spv")
+            std::string("shaders/DebugCircle/vertex_shader.vert.spv"),
+            std::string("shaders/DebugCircle/fragment_shader.frag.spv")
     };
 
     Shader shader2 = Shader(logicalDevice, fileNames);

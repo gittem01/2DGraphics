@@ -99,8 +99,8 @@ void DebugLine::preparePipeline()
     vertexInputState.pVertexBindingDescriptions = &vertexInputBinding;
 
     std::vector<std::string> fileNames = {
-            std::string("../assets/shaders/VulkanDebugLine/vertex_shader.vert.spv"),
-            std::string("../assets/shaders/VulkanDebugLine/fragment_shader.frag.spv")
+            std::string("shaders/DebugLine/vertex_shader.vert.spv"),
+            std::string("shaders/DebugLine/fragment_shader.frag.spv")
     };
 
     Shader shader = Shader(logicalDevice, fileNames);

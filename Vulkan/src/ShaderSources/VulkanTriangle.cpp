@@ -145,8 +145,8 @@ void VulkanTriangle::preparePipeline()
     vertexInputState.pVertexAttributeDescriptions = attributes;
 
     std::vector<std::string> fileNames = {
-            std::string("shaders/VulkanTriangle/vertex_shader.vert.spv"),
-            std::string("shaders/VulkanTriangle/fragment_shader.frag.spv")
+            std::string("shaders/Textured/vertex_shader.vert.spv"),
+            std::string("shaders/Textured/fragment_shader.frag.spv")
     };
 
     Shader shader = Shader(logicalDevice, fileNames);

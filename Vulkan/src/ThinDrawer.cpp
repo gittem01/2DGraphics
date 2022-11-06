@@ -35,7 +35,6 @@ void ThinDrawer::surfaceRecreate()
     buildCommandBuffers();
 
     vkDeviceWaitIdle(logicalDevice);
-    printf("Recreated\n");
 }
 
 void ThinDrawer::initExtra()
