@@ -37,25 +37,48 @@ float getDist(vec2 a, vec2 b, vec2 c)
     return top / bot;
 }
 
-float lineRel(vec2 a, vec2 b, vec2 c)
-{
-     return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-}
-
 void main()
 {
+    float d = 0.1f;
+    float smth = 1.0f;
+    float minVal = 54426262.736f;
     for (int i1 = 0; i1 < ubo.numPoints; i1++)
     {
         int i2 = (i1 + 1) % ubo.numPoints;
 
         vec2 v1 = vec2(ubo.polyPoints[i1 / 2][(i1 % 2) * 2], ubo.polyPoints[i1 / 2][(i1 % 2) * 2 + 1]);
         vec2 v2 = vec2(ubo.polyPoints[i2 / 2][(i2 % 2) * 2], ubo.polyPoints[i2 / 2][(i2 % 2) * 2 + 1]);
-        if (getDist(v1, v2, localPos) < 0.1f)
+        float dist = getDist(v1, v2, localPos);
+        if (dist < d)
         {
-            color = vec4(sharedData.colour.xyz, 1.0f);
-            return;
+            if (dist < minVal)
+            {
+                minVal = dist;
+            }
         }
     }
 
-    color = vec4(1, 1, 1, gl_PrimitiveID / 8.0f + 0.16666);
+    if (minVal != 54426262.736f)
+    {
+        float bias = 0.8f;
+        float perct = (d * 0.5f - minVal) / (d * 0.5f);
+        if (perct > bias)
+        {
+            float newPerct = (perct - bias) / (1 - bias);
+            color = vec4(sharedData.colour.xyz, 1 - newPerct);
+        }
+        else if (perct < -bias)
+        {
+            float newPerct = (-perct - bias) / (1 - bias);
+            color = vec4(sharedData.colour.xyz, 1 - newPerct);
+        }
+        else
+        {
+            color = vec4(sharedData.colour.xyz, 1);
+        }
+    }
+    else
+    {
+        color = vec4(1, 1, 1, 0.2);
+    }
 }
