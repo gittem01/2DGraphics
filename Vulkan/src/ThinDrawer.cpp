@@ -19,6 +19,7 @@ void ThinDrawer::surfaceRecreate()
     vkDestroyPipeline(logicalDevice, texturedShader->pipeline, VK_NULL_HANDLE);
     vkDestroyPipeline(logicalDevice, debugCircleShader->pipeline, VK_NULL_HANDLE);
     vkDestroyPipeline(logicalDevice, debugLineShader->pipeline, VK_NULL_HANDLE);
+    vkDestroyPipeline(logicalDevice, debugPolygonShader->pipeline, VK_NULL_HANDLE);
     vkDestroyRenderPass(logicalDevice, renderPass, VK_NULL_HANDLE);
     swapChain->destroy();
     
@@ -42,6 +43,7 @@ void ThinDrawer::initExtra()
     texturedShader = new VulkanTriangle(this);
     debugCircleShader = new DebugCircle(this);
     debugLineShader = new DebugLine(this);
+    debugPolygonShader = new DebugPolygon(this);
 
     prepareVertices();
     prepareUniformBuffers();
@@ -86,6 +88,15 @@ void ThinDrawer::uniformFiller(int frameNum)
     CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugLineShader->uniformBuffers[frameNum][1]->memory, 0, sizeof(uboMixed), 0, (void**)&uboMixed));
     uboMixed->data.x = wh->cam->zoom;
     vkUnmapMemory(logicalDevice, debugLineShader->uniformBuffers[frameNum][1]->memory);
+
+    // polygon
+    s_uboVSPOLY* polyData;
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugPolygonShader->uniformBuffers[frameNum][0]->memory, 0, sizeof(polyData), 0, (void**)&polyData));
+    polyData->orthoMatrix = wh->cam->ortho;
+    polyData->polyPoints[0] = glm::vec4(-2.0f, 1.0f,  2.0f, 0.5f);
+    polyData->polyPoints[1] = glm::vec4(2.0f, -0.5f, -2.0f, -1.0f);
+    polyData->polyPoints[2] = glm::vec4(-3.0f, 0.0f, 0.0f, 0.0f);
+    vkUnmapMemory(logicalDevice, debugPolygonShader->uniformBuffers[frameNum][0]->memory);
 }
 
 void ThinDrawer::renderLoop()
@@ -152,6 +163,7 @@ void ThinDrawer::prepareVertices()
     texturedShader->prepareVertexData();
     debugCircleShader->prepareVertexData();
     debugLineShader->prepareVertexData();
+    debugPolygonShader->prepareVertexData();
 }
 
 void ThinDrawer::prepareUniformBuffers()
@@ -159,6 +171,7 @@ void ThinDrawer::prepareUniformBuffers()
     texturedShader->prepareUniforms();
     debugCircleShader->prepareUniforms();
     debugLineShader->prepareUniforms();
+    debugPolygonShader->prepareUniforms();
 }
 
 void ThinDrawer::setupDescriptorSetLayout()
@@ -166,6 +179,7 @@ void ThinDrawer::setupDescriptorSetLayout()
     texturedShader->setupDescriptorSetLayout();
     debugCircleShader->setupDescriptorSetLayout();
     debugLineShader->setupDescriptorSetLayout();
+    debugPolygonShader->setupDescriptorSetLayout();
 }
 
 void ThinDrawer::preparePipelines()
@@ -173,6 +187,7 @@ void ThinDrawer::preparePipelines()
     texturedShader->preparePipeline();
     debugCircleShader->preparePipeline();
     debugLineShader->preparePipeline();
+    debugPolygonShader->preparePipeline();
 }
 
 void ThinDrawer::setupDescriptorPool()
@@ -200,6 +215,7 @@ void ThinDrawer::setupDescriptorSet()
     texturedShader->setupDescriptorSet();
     debugCircleShader->setupDescriptorSet();
     debugLineShader->setupDescriptorSet();
+    debugPolygonShader->setupDescriptorSet();
 }
 
 void ThinDrawer::buildCommandBuffers()
@@ -250,6 +266,7 @@ void ThinDrawer::buildCommandBuffers()
         vkCmdDrawIndexed(frames[i].commandBuffer, debugCircleShader->buffers[1]->count, 1, 0, 0, 1);
 
         // for debug line
+        
         vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, debugLineShader->pipeline);
 
         vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -258,6 +275,17 @@ void ThinDrawer::buildCommandBuffers()
         vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &debugCircleShader->buffers[0]->buffer, &offsets);
         vkCmdBindIndexBuffer(frames[i].commandBuffer, debugCircleShader->buffers[1]->buffer, 0, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(frames[i].commandBuffer, debugCircleShader->buffers[1]->count, 1, 0, 0, 1);
+
+        // for debug polygon
+
+        vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, debugPolygonShader->pipeline);
+
+        vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            debugPolygonShader->pipelineLayout, 0, 1, &debugPolygonShader->descriptorSet[i], 0, VK_NULL_HANDLE);
+
+        vkCmdDraw(frames[i].commandBuffer, 9, 1, 0, 0);
+
+        // end
 
         vkCmdEndRenderPass(frames[i].commandBuffer);
         CHECK_RESULT_VK(vkEndCommandBuffer(frames[i].commandBuffer));

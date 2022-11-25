@@ -3,6 +3,7 @@
 #include <ShaderHeaders/VulkanTriangle.h>
 #include <ShaderHeaders/DebugCircle.h>
 #include <ShaderHeaders/DebugLine.h>
+#include <ShaderHeaders/DebugPolygon.h>
 #include <WindowHandler.h>
 #include <stdlib.h>
 #include <definitions.h>
@@ -71,6 +72,12 @@ typedef struct
 
 typedef struct
 {
+    glm::mat4 orthoMatrix;
+    glm::vec4 polyPoints[4];
+} s_uboVSPOLY;
+
+typedef struct
+{
     glm::vec4 color;
     glm::vec4 outerColor;
     glm::vec4 data;
@@ -135,6 +142,7 @@ public:
     ShaderBase* texturedShader;
     ShaderBase* debugCircleShader;
     ShaderBase* debugLineShader;
+    ShaderBase* debugPolygonShader;
 
     // var end
 
