@@ -32,12 +32,7 @@ void DebugPolygon::prepareUniforms()
 
         thinDrawer->uniformHelper(sizeof(s_uboVSPOLY), uniformBufferVS);
 
-        s_uboVSPOLY uboVS;
-
         uint8_t* pData;
-        CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferVS->memory, 0, sizeof(s_uboVSPOLY), 0, (void**)&pData));
-        memcpy(pData, &uboVS, sizeof(s_uboVSPOLY));
-        vkUnmapMemory(logicalDevice, uniformBufferVS->memory);
 
         s_uboMixedLine data;
         data.color = glm::vec4(0.0f, 1.0f, 0.25f, 0.2f);
@@ -56,7 +51,7 @@ void DebugPolygon::setupDescriptorSetLayout()
     descriptorSets.resize(descriptorSetLayoutCount);
 
     VkDescriptorSetLayoutBinding layoutBinding =
-        vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1, 0);
+        vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0);
 
     VkDescriptorSetLayoutBinding layoutBinding2 =
         vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);

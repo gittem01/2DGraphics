@@ -96,6 +96,7 @@ void ThinDrawer::uniformFiller(int frameNum)
     polyData->polyPoints[0] = glm::vec4(-2.0f, 1.0f,  2.0f, 0.5f);
     polyData->polyPoints[1] = glm::vec4(2.0f, -0.5f, -2.0f, -1.0f);
     polyData->polyPoints[2] = glm::vec4(-3.0f, 0.0f, 0.0f, 0.0f);
+    polyData->numPoints = 5;
     vkUnmapMemory(logicalDevice, debugPolygonShader->uniformBuffers[frameNum][0]->memory);
 }
 

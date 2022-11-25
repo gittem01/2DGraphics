@@ -74,6 +74,7 @@ typedef struct
 {
     glm::mat4 orthoMatrix;
     glm::vec4 polyPoints[4];
+    int numPoints;
 } s_uboVSPOLY;
 
 typedef struct
