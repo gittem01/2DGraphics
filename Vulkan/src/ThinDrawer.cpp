@@ -73,7 +73,7 @@ void ThinDrawer::uniformFiller(int frameNum)
     vkUnmapMemory(logicalDevice, debugCircleShader->uniformBuffers[frameNum][0]->memory);
 
     // circle
-    s_uboFSCircle* uboFSCircle;
+    s_uboFSPoly* uboFSCircle;
     CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugCircleShader->uniformBuffers[frameNum][1]->memory, 0, sizeof(uboFSCircle), 0, (void**)&uboFSCircle));
     uboFSCircle->data.x = wh->cam->zoom;
     vkUnmapMemory(logicalDevice, debugCircleShader->uniformBuffers[frameNum][1]->memory);
@@ -99,8 +99,9 @@ void ThinDrawer::uniformFiller(int frameNum)
     polyData->numPoints = 5;
     vkUnmapMemory(logicalDevice, debugPolygonShader->uniformBuffers[frameNum][0]->memory);
 
-    CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugPolygonShader->uniformBuffers[frameNum][1]->memory, 0, sizeof(uboMixed), 0, (void**)&uboMixed));
-    uboMixed->data.x = wh->cam->zoom;
+    s_uboFSPoly* uboPoly;
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugPolygonShader->uniformBuffers[frameNum][1]->memory, 0, sizeof(uboPoly), 0, (void**)&uboPoly));
+    uboPoly->data.x = wh->cam->zoom;
     vkUnmapMemory(logicalDevice, debugPolygonShader->uniformBuffers[frameNum][1]->memory);
 }
 

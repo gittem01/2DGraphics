@@ -1,12 +1,5 @@
 #version 460 core
 
-struct triangle
-{
-    vec2 p1;
-    vec2 p2;
-    vec2 p3;
-};
-
 layout (location = 0) out vec4 color;
 
 layout (location = 0) in vec2 localPos;
@@ -20,7 +13,8 @@ layout (set = 0, binding = 0) uniform UBO
 
 layout (set = 0, binding = 1) uniform SharedUBO
 {
-    vec4 colour;
+    vec4 innerColour;
+    vec4 outerColour;
     vec4 data; // zoom, thickness, outerSmoothness, unused
 } sharedData;
 
@@ -37,13 +31,13 @@ float getDist(vec2 a, vec2 b, vec2 c)
     return top / bot;
 }
 
+float minVal = 54426262.736f;
+
 void main()
 {
-    vec4 innerColour = vec4(0.0f, 0.5f, 1.0f, 0.1f);
-    float d = 0.1f;
-    d = d / (sharedData.data.x * sharedData.data.x);
-    float smth = 1.0f;
-    float minVal = 54426262.736f;
+    vec4 innerColour = sharedData.innerColour;
+    float d = sharedData.data.y / (sharedData.data.x * sharedData.data.x);
+    
     for (int i1 = 0; i1 < ubo.numPoints; i1++)
     {
         int i2 = (i1 + 1) % ubo.numPoints;
@@ -67,19 +61,18 @@ void main()
         if (perct > bias)
         {
             float newPerct = (perct - bias) / (1 - bias);
-            color = vec4(sharedData.colour.xyz, (1 - newPerct) * sharedData.colour.w);
+            color = vec4(sharedData.outerColour.xyz, (1 - newPerct) * sharedData.outerColour.w);
         }
         else if (perct < -bias)
         {
             float newPerct = (-perct - bias) / (1 - bias);
-            float alphaVal = sharedData.colour.w + newPerct * (innerColour.w - sharedData.colour.w);
-            vec3 colourMix = sharedData.colour.xyz * (1 - newPerct * innerColour.w / alphaVal) + innerColour.xyz * newPerct * innerColour.w / alphaVal;
+            float alphaVal = sharedData.outerColour.w + newPerct * (innerColour.w - sharedData.outerColour.w);
+            vec3 colourMix = sharedData.outerColour.xyz * (1 - newPerct * innerColour.w / alphaVal) + innerColour.xyz * newPerct * innerColour.w / alphaVal;
             color = vec4(colourMix, alphaVal);
-            //color = vec4(sharedData.colour.xyz, 1 - newPerct);
         }
         else
         {
-            color = sharedData.colour;
+            color = sharedData.outerColour;
         }
     }
     else

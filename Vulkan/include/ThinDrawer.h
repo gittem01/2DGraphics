@@ -82,7 +82,7 @@ typedef struct
     glm::vec4 color;
     glm::vec4 outerColor;
     glm::vec4 data;
-} s_uboFSCircle;
+} s_uboFSPoly;
 
 typedef struct
 {
