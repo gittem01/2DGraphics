@@ -56,7 +56,7 @@ void main()
 
     if (minVal != 54426262.736f)
     {
-        float bias = 0.5f;
+        float bias = sharedData.data.z;
         float perct = (d * 0.5f - minVal) / (d * 0.5f);
         if (perct > bias)
         {

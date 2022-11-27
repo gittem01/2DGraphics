@@ -38,6 +38,7 @@ void DebugPolygon::prepareUniforms()
         data.color = glm::vec4(0.0f, 0.5f, 1.0f, 0.1f);
         data.outerColor = glm::vec4(1.0f, 0.5f, 0.0f, 1.0f);
         data.data.y = 0.1f;
+        data.data.z = 0.5f;
         thinDrawer->uniformHelper(sizeof(s_uboFSPoly), uniformBufferMix);
         CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferMix->memory, 0, sizeof(s_uboFSPoly), 0, (void**)&pData));
         memcpy(pData, &data, sizeof(s_uboFSPoly));
