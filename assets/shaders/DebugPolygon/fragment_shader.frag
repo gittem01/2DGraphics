@@ -39,7 +39,9 @@ float getDist(vec2 a, vec2 b, vec2 c)
 
 void main()
 {
+    vec4 innerColour = vec4(0.0f, 0.5f, 1.0f, 0.1f);
     float d = 0.1f;
+    d = d / (sharedData.data.x * sharedData.data.x);
     float smth = 1.0f;
     float minVal = 54426262.736f;
     for (int i1 = 0; i1 < ubo.numPoints; i1++)
@@ -60,25 +62,28 @@ void main()
 
     if (minVal != 54426262.736f)
     {
-        float bias = 0.8f;
+        float bias = 0.5f;
         float perct = (d * 0.5f - minVal) / (d * 0.5f);
         if (perct > bias)
         {
             float newPerct = (perct - bias) / (1 - bias);
-            color = vec4(sharedData.colour.xyz, 1 - newPerct);
+            color = vec4(sharedData.colour.xyz, (1 - newPerct) * sharedData.colour.w);
         }
         else if (perct < -bias)
         {
             float newPerct = (-perct - bias) / (1 - bias);
-            color = vec4(sharedData.colour.xyz, 1 - newPerct);
+            float alphaVal = sharedData.colour.w + newPerct * (innerColour.w - sharedData.colour.w);
+            vec3 colourMix = sharedData.colour.xyz * (1 - newPerct * innerColour.w / alphaVal) + innerColour.xyz * newPerct * innerColour.w / alphaVal;
+            color = vec4(colourMix, alphaVal);
+            //color = vec4(sharedData.colour.xyz, 1 - newPerct);
         }
         else
         {
-            color = vec4(sharedData.colour.xyz, 1);
+            color = sharedData.colour;
         }
     }
     else
     {
-        color = vec4(1, 1, 1, 0.2);
+        color = innerColour;
     }
 }

@@ -98,6 +98,10 @@ void ThinDrawer::uniformFiller(int frameNum)
     polyData->polyPoints[2] = glm::vec4(-3.0f, 0.0f, 0.0f, 0.0f);
     polyData->numPoints = 5;
     vkUnmapMemory(logicalDevice, debugPolygonShader->uniformBuffers[frameNum][0]->memory);
+
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugPolygonShader->uniformBuffers[frameNum][1]->memory, 0, sizeof(uboMixed), 0, (void**)&uboMixed));
+    uboMixed->data.x = wh->cam->zoom;
+    vkUnmapMemory(logicalDevice, debugPolygonShader->uniformBuffers[frameNum][1]->memory);
 }
 
 void ThinDrawer::renderLoop()

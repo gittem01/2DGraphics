@@ -44,7 +44,6 @@ void main()
             if (perct > reverseOuter)
             {
                 perct = (perct - reverseOuter) * (1.0f / ubo.data.z);
-                vec4 innerColour = vec4(ubo.colour.xyz * perct * ubo.colour.w, 0);
                 float alphaVal = ubo.outerColour.w + perct * (ubo.colour.w - ubo.outerColour.w);
                 vec3 colourMix = ubo.outerColour.xyz * (1 - perct * ubo.colour.w / alphaVal) + ubo.colour.xyz * perct * ubo.colour.w / alphaVal;
                 FragColour = vec4(colourMix, alphaVal);

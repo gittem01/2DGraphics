@@ -35,7 +35,7 @@ void DebugPolygon::prepareUniforms()
         uint8_t* pData;
 
         s_uboMixedLine data;
-        data.color = glm::vec4(0.0f, 1.0f, 0.25f, 0.2f);
+        data.color = glm::vec4(1.0f, 0.5f, 0.0f, 1.0f);
         // fill : data.data
         thinDrawer->uniformHelper(sizeof(s_uboMixedLine), uniformBufferMix);
         CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferMix->memory, 0, sizeof(s_uboMixedLine), 0, (void**)&pData));
