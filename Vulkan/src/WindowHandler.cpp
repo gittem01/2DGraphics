@@ -70,6 +70,7 @@ void WindowHandler::massInit()
     window = glfwCreateWindow(windowSizes.x, windowSizes.y, "2D Vulkan", NULL, NULL);
     if (!window)
     {
+        printf("Could not create window\n");
         glfwTerminate();
         exit(1);
     }

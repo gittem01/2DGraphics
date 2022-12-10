@@ -71,7 +71,7 @@ void ThinDrawer::createInstance()
 #else
     extensionCount = glfwExtensionCount;
     const char** requiredExtensions = (const char**)malloc(sizeof(char*) * glfwExtensionCount);
-#endif // VK_KHR_portability_enumeration
+#endif
 
     memcpy(requiredExtensions, glfwExtensions, sizeof(const char*) * glfwExtensionCount);
 
@@ -118,7 +118,8 @@ void ThinDrawer::selectPhysicalDevice()
                     physicalDevice = devices[i];
                     queues.graphicsQueueFamilyIndex = j;
                     vkGetPhysicalDeviceProperties(devices[i], &vulkanInfo->deviceProperties);
-                    if (vulkanInfo->deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU && deviceCount > 1)
+                    if ((vulkanInfo->deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU ||
+                        vulkanInfo->deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU) && deviceCount > 1)
                     {
                         continue;
                     }
