@@ -215,8 +215,6 @@ void ThinDrawer::setSamples()
             break;
         }
     }
-
-    uint32_t maxSampleCount = pow(2, (uint32_t)log2(counts));
 }
 
 void ThinDrawer::createRenderPass()
