@@ -7,13 +7,17 @@ layout (location = 0) in vec2 vertex;
 layout (location = 0) out vec2 localPos;
 layout (location = 1) out vec2 size;
 
-layout (set = 0, binding = 0) uniform UBO
+layout (set = 0, binding = 0) uniform SharedUboData
 {
-    mat4 ortho;
+    mat4 orthoMatrix;
+} sharedUboData;
+
+layout (set = 0, binding = 1) uniform UBO
+{
     vec4 linePoints;
 } ubo;
 
-layout (set = 0, binding = 1) uniform SharedUBO
+layout (set = 0, binding = 2) uniform SharedUBO
 {
     vec4 colour;
     vec4 data; // zoom, thickness, unused, unused
@@ -70,5 +74,5 @@ void main()
     // transform
     vCopy += midPoint;
 
-    gl_Position = ubo.ortho * vec4(vCopy, 0.0, 1.0);
+    gl_Position = sharedUboData.orthoMatrix * vec4(vCopy, 0.0, 1.0);
 }

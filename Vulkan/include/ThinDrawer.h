@@ -5,16 +5,13 @@
 #include <ShaderHeaders/DebugLine.h>
 #include <ShaderHeaders/DebugPolygon.h>
 #include <WindowHandler.h>
-#include <stdlib.h>
 #include <definitions.h>
 #include <GLFW/glfw3.h>
-#include <string.h>
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include <vector>
 
-#define NUM_FRAMES 2
 #define PRINT_INFO_MESSAGES 1
 
 static const char* ENABLE_EXTENSIONS[] =
@@ -23,12 +20,6 @@ static const char* ENABLE_EXTENSIONS[] =
 };
 
 static const int NUM_ENABLE_EXTENSIONS = sizeof(ENABLE_EXTENSIONS) / sizeof(ENABLE_EXTENSIONS[0]);
-
-typedef struct
-{
-    VkShaderModule shaderModules[2];
-    VkPipelineShaderStageCreateInfo shaderStageCreateInfos[2];
-} s_shader;
 
 typedef struct
 {
@@ -67,12 +58,16 @@ typedef struct
 typedef struct
 {
     glm::mat4 orthoMatrix;
+} s_sharedUniformData;
+
+typedef struct
+{
     glm::mat4 modelMatrix;
 } s_uboVS;
 
 typedef struct
 {
-    glm::mat4 orthoMatrix;
+    glm::mat4 modelMatrix;
     glm::vec4 polyPoints[4];
     int numPoints;
 } s_uboVSPOLY;
@@ -92,7 +87,6 @@ typedef struct
 
 typedef struct
 {
-    glm::mat4 ortho;
     glm::vec4 linePoints;
 } s_uboVSLine;
 
@@ -140,6 +134,7 @@ public:
 
     // Diff var start
 
+    std::vector<s_uniformBuffer*> sharedOrthoUniform;
     ShaderBase* texturedShader;
     ShaderBase* debugCircleShader;
     ShaderBase* debugLineShader;

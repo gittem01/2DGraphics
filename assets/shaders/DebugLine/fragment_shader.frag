@@ -5,7 +5,7 @@ layout (location = 0) out vec4 color;
 layout (location = 0) in vec2 localPos;
 layout (location = 1) in vec2 size;
 
-layout (set = 0, binding = 1) uniform SharedUBO
+layout (set = 0, binding = 2) uniform SharedUBO
 {
     vec4 colour;
     vec4 data; // zoom, thickness, outerSmoothness, unused

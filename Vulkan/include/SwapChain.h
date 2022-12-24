@@ -1,9 +1,7 @@
 #pragma once
 
-#include <stdlib.h>
 #include <definitions.h>
 #include <GLFW/glfw3.h>
-#include <string.h>
 #include <vulkan/vulkan.h>
 
 class ThinDrawer;

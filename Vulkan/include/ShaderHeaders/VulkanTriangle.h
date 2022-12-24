@@ -13,5 +13,5 @@ private:
     void prepareUniforms();
     void setupDescriptorSetLayout();
     void preparePipeline();
-    void setupDescriptorSet();
+    void setupDescriptorSet() override;
 };

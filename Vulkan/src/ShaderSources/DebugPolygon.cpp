@@ -14,7 +14,7 @@ void DebugPolygon::prepareVertexData()
 
 void DebugPolygon::prepareUniforms()
 {
-    const int bufferSize = 2;
+    const int bufferSize = 4;
     int imCount = thinDrawer->swapChain->imageCount;
     uniformBuffers.resize(imCount);
 
@@ -29,6 +29,8 @@ void DebugPolygon::prepareUniforms()
 
         s_uniformBuffer* uniformBufferVS = uniformBuffers[i][0];
         s_uniformBuffer* uniformBufferMix = uniformBuffers[i][1];
+        s_uniformBuffer* uniformBufferPortalNum = uniformBuffers[i][2];
+        s_uniformBuffer* uniformBufferPortals = uniformBuffers[i][3];
 
         thinDrawer->uniformHelper(sizeof(s_uboVSPOLY), uniformBufferVS);
 
@@ -43,6 +45,22 @@ void DebugPolygon::prepareUniforms()
         CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferMix->memory, 0, sizeof(s_uboFSPoly), 0, (void**)&pData));
         memcpy(pData, &data, sizeof(s_uboFSPoly));
         vkUnmapMemory(logicalDevice, uniformBufferMix->memory);
+
+        //glm::vec4 vec[2] = { glm::vec4(-1.0f, 0.5f, 1.0f, 1.0f), glm::vec4(1.0f, -0.5f, -1.0f, -1.0f) };
+        glm::vec4 vec[] = { };
+        thinDrawer->uniformHelper(256 * sizeof(glm::vec4), uniformBufferPortals);
+        if (sizeof(vec))
+        {
+            CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferPortals->memory, 0, sizeof(vec), 0, (void**)&pData));
+            memcpy(pData, &vec, sizeof(vec));
+            vkUnmapMemory(logicalDevice, uniformBufferPortals->memory);
+        }
+
+        thinDrawer->uniformHelper(sizeof(int), uniformBufferPortalNum);
+        CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferPortalNum->memory, 0, sizeof(int), 0, (void**)&pData));
+        int val = sizeof(vec) / sizeof(glm::vec4);
+        memcpy(pData, &val, sizeof(int));
+        vkUnmapMemory(logicalDevice, uniformBufferPortalNum->memory);
     }
 }
 
@@ -52,13 +70,22 @@ void DebugPolygon::setupDescriptorSetLayout()
 
     descriptorSets.resize(descriptorSetLayoutCount);
 
-    VkDescriptorSetLayoutBinding layoutBinding =
-        vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0);
+    VkDescriptorSetLayoutBinding layoutBinding0 =
+            vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1, 0);
+
+    VkDescriptorSetLayoutBinding layoutBinding1 =
+            vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
 
     VkDescriptorSetLayoutBinding layoutBinding2 =
-        vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
+            vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 2);
 
-    VkDescriptorSetLayoutBinding bindings[] = { layoutBinding, layoutBinding2 };
+    VkDescriptorSetLayoutBinding layoutBinding3 =
+            vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 3);
+
+    VkDescriptorSetLayoutBinding layoutBinding4 =
+            vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 4);
+
+    VkDescriptorSetLayoutBinding bindings[] = { layoutBinding0, layoutBinding1, layoutBinding2, layoutBinding3, layoutBinding4 };
 
     VkDescriptorSetLayoutCreateInfo descriptorLayout = vkinit::descriptorSetLayoutCreateInfo(bindings, sizeof(bindings) / sizeof(bindings[0]));
     CHECK_RESULT_VK(vkCreateDescriptorSetLayout(logicalDevice, &descriptorLayout, VK_NULL_HANDLE, &descriptorSets[0]));
@@ -94,31 +121,4 @@ void DebugPolygon::preparePipeline()
     CHECK_RESULT_VK(vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, pipelineCreateInfo, VK_NULL_HANDLE, &pipeline));
 
     ThinDrawer::freePipelineData(pipelineCreateInfo);
-}
-
-void DebugPolygon::setupDescriptorSet()
-{
-    int imCount = thinDrawer->swapChain->imageCount;
-    descriptorSet.resize(imCount);
-
-    for (int i = 0; i < imCount; i++)
-    {
-        VkDescriptorSetAllocateInfo allocInfo = vkinit::descriptorSetAllocateInfo(thinDrawer->descriptorPool, &descriptorSets[0], 1);
-        CHECK_RESULT_VK(vkAllocateDescriptorSets(logicalDevice, &allocInfo, &descriptorSet[i]));
-
-        VkWriteDescriptorSet writeDescriptorSet = { };
-
-        writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptorSet.dstSet = descriptorSet[i];
-        writeDescriptorSet.descriptorCount = 1;
-        writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-
-        for (int j = 0; j < uniformBuffers[i].size(); j++)
-        {
-            writeDescriptorSet.pBufferInfo = &uniformBuffers[i][j]->descriptor;
-            writeDescriptorSet.dstBinding = j;
-
-            vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
-        }
-    }
 }

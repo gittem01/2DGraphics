@@ -62,14 +62,18 @@ void ThinDrawer::initExtra()
 
 void ThinDrawer::uniformFiller(int frameNum)
 {
+    // base
+    s_sharedUniformData* sharedData;
+    CHECK_RESULT_VK(vkMapMemory(logicalDevice, sharedOrthoUniform[frameNum]->memory, 0, sizeof(s_sharedUniformData), 0, (void**)&sharedData));
+    sharedData->orthoMatrix = wh->cam->ortho;
+    vkUnmapMemory(logicalDevice, sharedOrthoUniform[frameNum]->memory);
+
     // textured
     s_uboVS* pData;
     CHECK_RESULT_VK(vkMapMemory(logicalDevice, texturedShader->uniformBuffers[frameNum][0]->memory, 0, sizeof(s_uboVS), 0, (void**)&pData));
-    pData->orthoMatrix = wh->cam->ortho;
     vkUnmapMemory(logicalDevice, texturedShader->uniformBuffers[frameNum][0]->memory);
 
     CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugCircleShader->uniformBuffers[frameNum][0]->memory, 0, sizeof(s_uboVS), 0, (void**)&pData));
-    pData->orthoMatrix = wh->cam->ortho;
     vkUnmapMemory(logicalDevice, debugCircleShader->uniformBuffers[frameNum][0]->memory);
 
     // circle
@@ -81,7 +85,6 @@ void ThinDrawer::uniformFiller(int frameNum)
     // line
     s_uboVSLine* uboVS;
     CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugLineShader->uniformBuffers[frameNum][0]->memory, 0, sizeof(uboVS), 0, (void**)&uboVS));
-    uboVS->ortho = wh->cam->ortho;
     vkUnmapMemory(logicalDevice, debugLineShader->uniformBuffers[frameNum][0]->memory);
 
     s_uboMixedLine* uboMixed;
@@ -92,7 +95,7 @@ void ThinDrawer::uniformFiller(int frameNum)
     // polygon
     s_uboVSPOLY* polyData;
     CHECK_RESULT_VK(vkMapMemory(logicalDevice, debugPolygonShader->uniformBuffers[frameNum][0]->memory, 0, sizeof(polyData), 0, (void**)&polyData));
-    polyData->orthoMatrix = wh->cam->ortho;
+    polyData->modelMatrix = glm::mat4(1.0f);
     polyData->polyPoints[0] = glm::vec4(-2.0f, 1.0f,  2.0f, 0.5f);
     polyData->polyPoints[1] = glm::vec4(2.0f, -0.5f, -2.0f, -1.0f);
     polyData->polyPoints[2] = glm::vec4(-3.0f, 0.0f, 0.0f, 0.0f);
@@ -174,6 +177,12 @@ void ThinDrawer::prepareVertices()
 
 void ThinDrawer::prepareUniformBuffers()
 {
+    sharedOrthoUniform.resize(swapChain->imageCount);
+    for (int i = 0; i < swapChain->imageCount; i++)
+    {
+        sharedOrthoUniform[i] = (s_uniformBuffer*)malloc(sizeof(s_uniformBuffer));
+        uniformHelper(sizeof(s_sharedUniformData), sharedOrthoUniform[i]);
+    }
     texturedShader->prepareUniforms();
     debugCircleShader->prepareUniforms();
     debugLineShader->prepareUniforms();
@@ -247,6 +256,7 @@ void ThinDrawer::buildCommandBuffers()
         viewport.maxDepth = (float)1.0f;
         vkCmdSetViewport(frames[i].commandBuffer, 0, 1, &viewport);
 
+        // for debug triangle
         vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, texturedShader->pipeline);
 
         vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -272,7 +282,7 @@ void ThinDrawer::buildCommandBuffers()
         vkCmdDrawIndexed(frames[i].commandBuffer, debugCircleShader->buffers[1]->count, 1, 0, 0, 1);
 
         // for debug line
-        
+
         vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, debugLineShader->pipeline);
 
         vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,

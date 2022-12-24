@@ -88,16 +88,19 @@ void VulkanTriangle::setupDescriptorSetLayout()
 
     descriptorSets.resize(descriptorSetLayoutCount);
 
-    VkDescriptorSetLayoutBinding layoutBinding =
-        vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1, 0);
+    VkDescriptorSetLayoutBinding layoutBinding0 =
+            vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1, 0);
+
+    VkDescriptorSetLayoutBinding layoutBinding1 =
+        vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1, 1);
 
     VkDescriptorSetLayoutBinding layoutBinding2 =
-        vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
-
-    VkDescriptorSetLayoutBinding layoutBinding3 =
         vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 2);
 
-    VkDescriptorSetLayoutBinding bindings[] = { layoutBinding, layoutBinding2, layoutBinding3 };
+    VkDescriptorSetLayoutBinding layoutBinding3 =
+        vkinit::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 3);
+
+    VkDescriptorSetLayoutBinding bindings[] = { layoutBinding0, layoutBinding1, layoutBinding2, layoutBinding3 };
 
     VkDescriptorSetLayoutCreateInfo descriptorLayout = vkinit::descriptorSetLayoutCreateInfo(bindings, sizeof(bindings) / sizeof(bindings[0]));
     CHECK_RESULT_VK(vkCreateDescriptorSetLayout(logicalDevice, &descriptorLayout, VK_NULL_HANDLE, &descriptorSets[0]));
@@ -163,38 +166,16 @@ void VulkanTriangle::preparePipeline()
 
 void VulkanTriangle::setupDescriptorSet()
 {
+    ShaderBase::setupDescriptorSet();
+
     int imCount = thinDrawer->swapChain->imageCount;
     descriptorSet.resize(imCount);
 
     for (int i = 0; i < imCount; i++)
     {
-        VkDescriptorSetAllocateInfo allocInfo = vkinit::descriptorSetAllocateInfo(thinDrawer->descriptorPool, &descriptorSets[0], 1);
-        CHECK_RESULT_VK(vkAllocateDescriptorSets(logicalDevice, &allocInfo, &descriptorSet[i]));
-
-        VkWriteDescriptorSet writeDescriptorSet = { };
-
-        writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptorSet.dstSet = descriptorSet[i];
-        writeDescriptorSet.descriptorCount = 1;
-        writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        writeDescriptorSet.pBufferInfo = &uniformBuffers[i][0]->descriptor;
-        writeDescriptorSet.dstBinding = 0;
-
-        vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
-
-        writeDescriptorSet.pBufferInfo = &uniformBuffers[i][1]->descriptor;
-        writeDescriptorSet.dstBinding = 1;
-
-        vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
-
-        writeDescriptorSet.pBufferInfo = &uniformBuffers[i][2]->descriptor;
-        writeDescriptorSet.dstBinding = 2;
-
-        vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, VK_NULL_HANDLE);
-
-        for (int i = 0; i < textureData.size(); i++)
+        for (int j = 0; j < textureData.size(); j++)
         {
-            thinDrawer->updateImageDescriptors(textureData[i], descriptorSets[1]);
+            thinDrawer->updateImageDescriptors(textureData[j], descriptorSets[1]);
         }
     }
 }

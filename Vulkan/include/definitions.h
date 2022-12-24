@@ -2,7 +2,6 @@
 
 #include <vulkan/vulkan.h>
 #include <stdio.h>
-#include <assert.h>
 
 static VkResult ERROR_VALUES[]
 =

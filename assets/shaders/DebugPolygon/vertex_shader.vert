@@ -1,27 +1,19 @@
 #version 460 core
 
-
-struct triangle
-{
-    vec2 p1;
-    vec2 p2;
-    vec2 p3;
-};
-
 layout (location = 0) out vec2 localPos;
+layout (location = 1) out vec2 worldPosition;
 
-layout (set = 0, binding = 0) uniform UBO
+layout (set = 0, binding = 0) uniform SharedUboData
 {
-    mat4 ortho;
+    mat4 orthoMatrix;
+} sharedUboData;
+
+layout (set = 0, binding = 1) uniform UBO
+{
+    mat4 modelMatrix;
     vec4 polyPoints[4];
     int numPoints;
 } ubo;
-
-layout (set = 0, binding = 1) uniform SharedUBO
-{
-    vec4 colour;
-    vec4 data; // zoom, thickness, unused, unused
-} sharedData;
 
 void main()
 {
@@ -46,5 +38,8 @@ void main()
     vec2 v = vec2(ubo.polyPoints[pos / 2][(pos % 2) * 2], ubo.polyPoints[pos / 2][(pos % 2) * 2 + 1]);
 
     localPos = v;
-    gl_Position = ubo.ortho * vec4(v, 0.0, 1.0);
+    vec4 wp = ubo.modelMatrix * vec4(v, 0.0, 1.0f);
+    worldPosition = wp.xy;
+
+    gl_Position = sharedUboData.orthoMatrix * wp;
 }
