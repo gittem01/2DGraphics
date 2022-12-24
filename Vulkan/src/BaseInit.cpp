@@ -217,9 +217,6 @@ void ThinDrawer::setSamples()
     }
 
     uint32_t maxSampleCount = pow(2, (uint32_t)log2(counts));
-#if PRINT_INFO_MESSAGES
-    printf("Desired sample count: %d\nApplied sample count: %d\nMax sample count: %d\n\n", desiredSamples, samples, maxSampleCount);
-#endif
 }
 
 void ThinDrawer::createRenderPass()

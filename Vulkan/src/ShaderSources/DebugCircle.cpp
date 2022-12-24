@@ -53,6 +53,8 @@ void DebugCircle::prepareUniforms()
 
         s_uniformBuffer* uniformBufferVS = uniformBuffers[i][0];
         s_uniformBuffer* uniformBufferFS = uniformBuffers[i][1];
+        s_uniformBuffer* uniformBufferPortalNum = uniformBuffers[i][2];
+        s_uniformBuffer* uniformBufferPortals = uniformBuffers[i][3];
 
         thinDrawer->uniformHelper(sizeof(int), uniformBuffers[i][2]);
         thinDrawer->uniformHelper(sizeof(256 * sizeof(glm::vec4)), uniformBuffers[i][3]);
@@ -79,6 +81,22 @@ void DebugCircle::prepareUniforms()
         memcpy(pData, &uboFSCircle, sizeof(uboFSCircle));
 
         vkUnmapMemory(logicalDevice, uniformBufferFS->memory);
+
+        //glm::vec4 vec[2] = { glm::vec4(-1.0f, 0.5f, 1.0f, 1.0f), glm::vec4(1.0f, -0.5f, -1.0f, -1.0f) };
+        glm::vec4 vec[] = { };
+        thinDrawer->uniformHelper(256 * sizeof(glm::vec4), uniformBufferPortals);
+        if (sizeof(vec))
+        {
+            CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferPortals->memory, 0, sizeof(vec), 0, (void**)&pData));
+            memcpy(pData, &vec, sizeof(vec));
+            vkUnmapMemory(logicalDevice, uniformBufferPortals->memory);
+        }
+
+        thinDrawer->uniformHelper(sizeof(int), uniformBufferPortalNum);
+        CHECK_RESULT_VK(vkMapMemory(logicalDevice, uniformBufferPortalNum->memory, 0, sizeof(int), 0, (void**)&pData));
+        int val = sizeof(vec) / sizeof(glm::vec4);
+        memcpy(pData, &val, sizeof(int));
+        vkUnmapMemory(logicalDevice, uniformBufferPortalNum->memory);
     }
 }
 
